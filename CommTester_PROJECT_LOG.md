@@ -96,3 +96,38 @@ No firmware behavior was intentionally changed during synchronization. Experimen
 **Verification:** GitHub files were fetched after the writes and their lengths/SHAs were confirmed. Compilation and hardware tests remain NOT RUN.
 
 **Next step:** establish the Master baseline using this synchronized source tree, with a compile-only check before any runtime Modbus request.
+
+
+---
+
+## CHECKPOINT-21 — Modbus Master removed from compact tester scope
+
+### CURRENT STATE
+
+The compact tester remains based on Arduino Nano / ATmega328P. The tested Modbus RTU Slave baseline is retained. Modbus Master has been removed from the current firmware scope to reserve resources for a small OLED display and a simple user interface.
+
+### CHANGE
+
+- Removed the Modbus Master include, initialization, loop branch, diagnostics, and mode transition from the main sketch.
+- Reduced the indicator mode cycle to SERVICE ↔ SLAVE.
+- Removed the Modbus Master source and header files from the sketch directory.
+- Updated project status and next step.
+
+### DECISION
+
+- The compact CommTester firmware will operate in SERVICE and SLAVE modes only.
+- Modbus Master is excluded from this version; this does not alter the verified Slave implementation.
+
+### TEST
+
+- Source-level review: PASS for removal of Master references from the main sketch and indicator mode.
+- Arduino compilation and memory report: NOT RUN in this checkpoint.
+- Slave hardware regression test: NOT RUN in this checkpoint.
+
+### NEXT STEP
+
+Compile the updated sketch with the existing Arduino Nano board and dependencies. Record Flash and global SRAM usage, then run the existing Slave regression tests.
+
+### BLOCKERS
+
+The exact SRAM and Flash savings are TBD until the updated firmware is compiled with the same board package and library versions as the baseline.
