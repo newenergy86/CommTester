@@ -1,7 +1,9 @@
 #include "indicators.h"
 #include "serial_console.h"
 #include "modbus_slave.h"
-
+#include "modbus_master.h"
+// Временная диагностика MASTER
+static unsigned long masterDebugTime = 0;
 
 // ============================================
 // SETUP
@@ -22,6 +24,7 @@ void setup() {
 
   ModbusSlave::begin();
 
+  ModbusMaster::begin();
 
   // ------------------------------------------
   // STARTUP MESSAGE
@@ -181,6 +184,11 @@ void loop() {
   // ------------------------------------------
 
   else if (mode == IND_MASTER) {
+      if (millis() - masterDebugTime >= 1000) {
+      masterDebugTime = millis();
+      Serial.println(F("MASTER LOOP OK"));
+    }
+    
 
     // Пока MASTER ещё не реализован.
   }
