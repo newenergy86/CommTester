@@ -13,7 +13,7 @@ The compact tester and the future main diagnostic instrument are separate projec
 - MCU: Arduino Nano / ATmega328P
 - Serial communication: current implementation uses the project's `ModbusRTU` transport layer and an external `ModbusADU` dependency.
 - Modbus Slave: implemented and tested.
-- Modbus Master: development in progress.
+- Modbus Master: excluded from the compact tester by project decision.
 - Indicators: LED and sound indication are implemented and being tested.
 - Display: planned; hardware selection and integration are TBD.
 
@@ -43,7 +43,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 
 - `M0` — Hardware base — completed baseline
 - `M1` — Modbus RTU Slave — completed and tested
-- `M2` — Modbus RTU Master — current milestone
+- `M2` — Modbus RTU Master — excluded from current compact-tester scope
 - `M3` — Bidirectional line testing
 - `M4` — Diagnostics and statistics
 - `M5` — Display
@@ -72,7 +72,7 @@ In particular:
 
 M1 is complete. The Modbus Slave has passed the current functional, CRC, and timing test set.
 
-M2 — Modbus RTU Master is the active development target.
+The current target is to retain the tested Slave and measure available SRAM before adding a compact OLED display.
 
 ### COMPLETED
 
@@ -88,18 +88,17 @@ M2 — Modbus RTU Master is the active development target.
 - The compact tester remains based on Arduino Nano / ATmega328P.
 - The external `ModbusADU` library is not modified.
 - Project-specific Modbus functionality is developed in the CommTester codebase where required.
-- Modbus Master is developed as the next major subsystem.
+- Modbus Master is excluded from the current compact tester to preserve resources for the display and user interface.
 
 ### OPEN QUESTIONS
 
-- Final Modbus Master API and implementation details.
-- Master error handling and diagnostic reporting.
-- Final display choice and whether the ATmega328P has sufficient resources for the desired UI/statistics.
+- Available SRAM after removing Modbus Master.
+- OLED integration using a page-buffered display driver.
 - Final enclosure dimensions.
 
 ### NEXT STEP
 
-Complete and test the Modbus RTU Master baseline before adding display functionality or other major subsystems.
+Compile the firmware without Modbus Master and measure memory usage before OLED integration.
 
 ### BLOCKERS
 
