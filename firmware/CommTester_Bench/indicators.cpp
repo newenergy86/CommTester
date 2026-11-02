@@ -392,9 +392,6 @@ void Indicators::setMode(IndicatorMode mode) {
     count = 2;
   }
 
-  if (mode == IND_MASTER) {
-    count = 3;
-  }
 
   beep(count);
 }
@@ -475,9 +472,6 @@ void Indicators::update() {
     modeCount = 2;
   }
 
-  if (currentMode == IND_MASTER) {
-    modeCount = 3;
-  }
 
 
   if (modeStep < modeCount) {
