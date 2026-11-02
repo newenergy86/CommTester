@@ -71,3 +71,28 @@ None.
 - M5 — Display: TBD
 - M6 — Portable enclosure: TBD
 - M7 — Final tester: TBD
+
+
+---
+
+## CHECKPOINT-20 — Firmware source synchronization
+
+**Status: repository synchronized; hardware/build verification not performed in this checkpoint.**
+
+The canonical firmware source files supplied in the project sources were copied to `firmware/CommTester_Bench/` on `main`.
+
+Synchronized modules:
+- `CommTester_Bench.ino`
+- `indicators.cpp/.h`
+- `serial_console.cpp/.h`
+- `modbus_config.h`
+- `modbus_master.cpp/.h`
+- `modbus_rtu.cpp/.h`
+- `modbus_slave.cpp/.h`
+- `modbus_slave_logic.cpp/.h`
+
+No firmware behavior was intentionally changed during synchronization. Experimental duplicate variants were not copied over the canonical files.
+
+**Verification:** GitHub files were fetched after the writes and their lengths/SHAs were confirmed. Compilation and hardware tests remain NOT RUN.
+
+**Next step:** establish the Master baseline using this synchronized source tree, with a compile-only check before any runtime Modbus request.
