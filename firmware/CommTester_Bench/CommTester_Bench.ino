@@ -1,9 +1,6 @@
 #include "indicators.h"
 #include "serial_console.h"
 #include "modbus_slave.h"
-#include "modbus_master.h"
-// Временная диагностика MASTER
-static unsigned long masterDebugTime = 0;
 
 // ============================================
 // SETUP
@@ -23,8 +20,6 @@ void setup() {
   SerialConsole::begin();
 
   ModbusSlave::begin();
-
-  ModbusMaster::begin();
 
   // ------------------------------------------
   // STARTUP MESSAGE
@@ -144,12 +139,6 @@ void loop() {
           SerialConsole::println("MODE: SLAVE");
         }
 
-        else if (currentMode == IND_MASTER) {
-
-          SerialConsole::println("MODE: MASTER");
-        }
-
-
         Indicators::tx();
       }
 
@@ -180,21 +169,6 @@ void loop() {
 
 
   // ------------------------------------------
-  // MASTER
-  // ------------------------------------------
-
-  else if (mode == IND_MASTER) {
-      if (millis() - masterDebugTime >= 1000) {
-      masterDebugTime = millis();
-      Serial.println(F("MASTER LOOP OK"));
-    }
-    
-
-    // Пока MASTER ещё не реализован.
-  }
-
-
-  // ------------------------------------------
   // BUTTON
   // ------------------------------------------
 
@@ -221,11 +195,6 @@ void loop() {
       Serial.println("SLAVE");
     }
 
-    else if (currentMode == IND_MASTER) {
-
-      Serial.println("MASTER");
-    }
-
     else {
 
       Serial.println("UNKNOWN");
@@ -248,15 +217,6 @@ void loop() {
 
 
       case IND_SLAVE:
-
-        Indicators::setMode(IND_MASTER);
-
-        Serial.println("MODE -> MASTER");
-
-        break;
-
-
-      case IND_MASTER:
 
         Indicators::setMode(IND_SERVICE);
 
