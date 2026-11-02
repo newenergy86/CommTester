@@ -5,8 +5,7 @@
 
 enum IndicatorMode {
   IND_SERVICE,
-  IND_SLAVE,
-  IND_MASTER
+  IND_SLAVE
 };
 
 namespace Indicators {
