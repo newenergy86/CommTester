@@ -14,85 +14,237 @@
 
 namespace ModbusSlave {
 
+  // ------------------------------------------
+  // SLAVE ADDRESS
+  // ------------------------------------------
+
   const byte SLAVE_ID = 1;
 
+
+  // ------------------------------------------
+  // MODBUS DATA SIZES
+  // ------------------------------------------
+  //
+  // Holding/Input Registers:
+  //   125 registers × 2 bytes = 250 bytes each
+  //
+  // Coils/Discrete Inputs:
+  //   stored as packed bits, not bool[125]
+  //
+  // Therefore:
+  //
+  //   125 coils            = 16 bytes
+  //   125 discrete inputs  = 16 bytes
+  //
+  // This is important for AVR SRAM.
+  // ------------------------------------------
+
   const uint16_t NUM_HOLDING_REGISTERS = 125;
+
   const uint16_t NUM_COILS = 125;
+
   const uint16_t NUM_DISCRETE_INPUTS = 125;
+
   const uint16_t NUM_INPUT_REGISTERS = 125;
 
+
+  // ------------------------------------------
+  // MODBUS DATA
+  // ------------------------------------------
+
   uint16_t holdingRegisters[NUM_HOLDING_REGISTERS];
+
   uint8_t coils[(NUM_COILS + 7) / 8];
+
   uint8_t discreteInputs[(NUM_DISCRETE_INPUTS + 7) / 8];
+
   uint16_t inputRegisters[NUM_INPUT_REGISTERS];
 
+
+  // ------------------------------------------
+  // COMMUNICATION
+  // ------------------------------------------
+
   ModbusRTU *modbusComm = nullptr;
+
   ModbusSlaveLogic modbusLogic;
 
 
+  // ==========================================
+  // BEGIN
+  // ==========================================
+
   void begin() {
+
+    // ----------------------------------------
+    // TEST HOLDING REGISTERS
+    // ----------------------------------------
 
     for (uint16_t i = 0;
          i < NUM_HOLDING_REGISTERS;
          i++) {
+
       holdingRegisters[i] = (i + 1) * 100;
     }
+
+
+    // ----------------------------------------
+    // TEST COILS
+    // ----------------------------------------
+    //
+    // Packed representation:
+    //
+    // bit 0 = coil 0
+    // bit 1 = coil 1
+    // ...
+    // bit 7 = coil 7
+    //
+    // 0xAA = 10101010
+    //
+    // Therefore:
+    //
+    // coil 0 = OFF
+    // coil 1 = ON
+    // coil 2 = OFF
+    // coil 3 = ON
+    // coil 4 = OFF
+    // coil 5 = ON
+    // coil 6 = OFF
+    // coil 7 = ON
+    //
+    // All remaining coils are OFF.
+    // ----------------------------------------
 
     for (uint16_t i = 0;
          i < (NUM_COILS + 7) / 8;
          i++) {
+
       coils[i] = 0;
     }
 
     for (uint16_t i = 0;
         i < (NUM_COILS + 7) / 8;
         i++) {
+
       coils[i] = 0xAA;
     }
+
+
+    // ----------------------------------------
+    // TEST DISCRETE INPUTS
+    // ----------------------------------------
+    //
+    // 0x55 = 01010101
+    //
+    // Therefore:
+    //
+    // input 0 = ON
+    // input 1 = OFF
+    // input 2 = ON
+    // input 3 = OFF
+    // input 4 = ON
+    // input 5 = OFF
+    // input 6 = ON
+    // input 7 = OFF
+    //
+    // All remaining inputs are OFF.
+    // ----------------------------------------
 
     for (uint16_t i = 0;
          i < (NUM_DISCRETE_INPUTS + 7) / 8;
          i++) {
+
       discreteInputs[i] = 0;
     }
 
     for (uint16_t i = 0;
         i < (NUM_DISCRETE_INPUTS + 7) / 8;
         i++) {
+
       discreteInputs[i] = 0x55;
     }
+
+
+    // ----------------------------------------
+    // TEST INPUT REGISTERS
+    // ----------------------------------------
 
     for (uint16_t i = 0;
          i < NUM_INPUT_REGISTERS;
          i++) {
+
       inputRegisters[i] = 1000 + i;
     }
+
+
+    // ----------------------------------------
+    // GET RS-232
+    // ----------------------------------------
 
     SoftwareSerial &rs232 =
       SerialConsole::getSerial();
 
+
+    // ----------------------------------------
+    // MODBUS COMMUNICATION
+    // ----------------------------------------
+
     modbusComm =
       new ModbusRTU(rs232);
+
+
+    // ----------------------------------------
+    // CONFIGURE HOLDING REGISTERS
+    // ----------------------------------------
 
     modbusLogic.configureHoldingRegisters(
       holdingRegisters,
       NUM_HOLDING_REGISTERS
     );
 
+
+    // ----------------------------------------
+    // CONFIGURE COILS
+    // ----------------------------------------
+    //
+    // The library receives:
+    //
+    //   pointer to packed byte array
+    //   number of logical coils
+    //
+    // The second parameter is therefore 125,
+    // not 16 bytes.
+    // ----------------------------------------
+
     modbusLogic.configureCoils(
       coils,
       NUM_COILS
     );
+
+
+    // ----------------------------------------
+    // CONFIGURE DISCRETE INPUTS
+    // ----------------------------------------
 
     modbusLogic.configureDiscreteInputs(
       discreteInputs,
       NUM_DISCRETE_INPUTS
     );
 
+
+    // ----------------------------------------
+    // CONFIGURE INPUT REGISTERS
+    // ----------------------------------------
+
     modbusLogic.configureInputRegisters(
       inputRegisters,
       NUM_INPUT_REGISTERS
     );
+
+
+    // ----------------------------------------
+    // START MODBUS
+    // ----------------------------------------
 
     modbusComm->begin(
       MODBUS_BAUD,
@@ -101,32 +253,55 @@ namespace ModbusSlave {
   }
 
 
+  // ==========================================
+  // UPDATE
+  // ==========================================
+
   void update() {
 
     if (modbusComm == nullptr) {
       return;
     }
 
+
+    // ----------------------------------------
+    // RECEIVE FRAME
+    // ----------------------------------------
+
     ModbusADU adu;
 
     ModbusRTUError error =
       modbusComm->readAdu(adu);
 
+
+    // ----------------------------------------
+    // NO FRAME
+    // ----------------------------------------
+
     if (error == MODBUS_RTU_TIMEOUT) {
       return;
     }
 
+
+    // ----------------------------------------
+    // FRAME RECEIVED
+    // ----------------------------------------
+
     Serial.println();
     Serial.println("FRAME RECEIVED");
+
 
     Serial.print("Length: ");
     Serial.println(adu.getRtuLen());
 
+
     Serial.print("ID: ");
     Serial.println(adu.getUnitId());
 
+
     Serial.print("Function: ");
     Serial.println(adu.getFunctionCode());
+
 
     Serial.print("CRC: ");
 
@@ -136,6 +311,11 @@ namespace ModbusSlave {
     else {
       Serial.println("BAD");
     }
+
+
+    // ----------------------------------------
+    // RAW FRAME
+    // ----------------------------------------
 
     if (adu.getRtuLen() > 0) {
 
@@ -159,6 +339,11 @@ namespace ModbusSlave {
 
       Serial.println();
     }
+
+
+    // ----------------------------------------
+    // COMMUNICATION ERROR
+    // ----------------------------------------
 
     if (error != MODBUS_RTU_SUCCESS) {
 
@@ -169,26 +354,50 @@ namespace ModbusSlave {
       Serial.println(adu.crcGood() ? "OK" : "BAD");
 
       Indicators::error();
+
       return;
     }
+
+
+    // ----------------------------------------
+    // CRC ERROR
+    // ----------------------------------------
 
     if (!adu.crcGood()) {
 
       Serial.println("CRC ERROR");
 
       Indicators::error();
+
       return;
     }
 
+
     Indicators::rx();
+
+
+    // ----------------------------------------
+    // SLAVE ID
+    // ----------------------------------------
 
     if (adu.getUnitId() != SLAVE_ID) {
 
       Serial.println("FOREIGN SLAVE ID");
+
       return;
     }
 
+
+    // ----------------------------------------
+    // PROCESS REQUEST
+    // ----------------------------------------
+
     modbusLogic.processPdu(adu);
+
+
+    // ----------------------------------------
+    // SHOW RESPONSE
+    // ----------------------------------------
 
     Serial.println();
 
@@ -196,14 +405,18 @@ namespace ModbusSlave {
 
     Serial.println("RESPONSE PREPARED");
 
+
     Serial.print("Length: ");
     Serial.println(adu.getRtuLen());
+
 
     Serial.print("ID: ");
     Serial.println(adu.getUnitId());
 
+
     Serial.print("Function: ");
     Serial.println(adu.getFunctionCode());
+
 
     Serial.print("CRC: ");
 
@@ -213,6 +426,11 @@ namespace ModbusSlave {
     else {
       Serial.println("BAD");
     }
+
+
+    // ----------------------------------------
+    // RAW RESPONSE
+    // ----------------------------------------
 
     if (adu.getRtuLen() > 0) {
 
@@ -236,6 +454,11 @@ namespace ModbusSlave {
 
       Serial.println();
     }
+
+
+    // ----------------------------------------
+    // TRANSMIT RESPONSE
+    // ----------------------------------------
 
     Serial.println("TRANSMITTING");
 
