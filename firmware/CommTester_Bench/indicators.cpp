@@ -1,5 +1,9 @@
 #include "indicators.h"
 
+// ============================================
+// PIN CONFIGURATION
+// ============================================
+
 const byte LED_RX    = 2;
 const byte LED_TX    = 3;
 const byte LED_ERROR = 4;
@@ -8,183 +12,311 @@ const byte LED_MODE  = 5;
 const byte BUZZER    = 6;
 const byte BUTTON    = 7;
 
+
+// ============================================
+// TIMING
+// ============================================
+
 const unsigned long EVENT_LED_TIME = 80;
+
 const unsigned long MODE_ON_TIME   = 180;
 const unsigned long MODE_OFF_TIME  = 180;
 const unsigned long MODE_PAUSE     = 3000;
+
 const unsigned long BUTTON_DEBOUNCE = 30;
 const unsigned long BUTTON_HOLD     = 2000;
 
-const unsigned int SOUND_RX_FREQ    = 2400;
-const unsigned int SOUND_TX_FREQ    = 1800;
-const unsigned int SOUND_ERROR_FREQ = 700;
+
+// ============================================
+// SOUND
+// ============================================
+
+const unsigned int SOUND_RX_FREQ     = 2400;
+const unsigned int SOUND_TX_FREQ     = 1800;
+const unsigned int SOUND_ERROR_FREQ  = 700;
 
 const unsigned long SOUND_RX_TIME    = 70;
 const unsigned long SOUND_TX_TIME    = 70;
 const unsigned long SOUND_ERROR_TIME = 250;
-const unsigned long SOUND_PAUSE = 30;
 
-unsigned long rxUntil = 0;
-unsigned long txUntil = 0;
-unsigned long errorUntil = 0;
+const unsigned long SOUND_PAUSE      = 30;
+
+
+// ============================================
+// SINGLE EVENT QUEUE
+// ============================================
+//
+// RX/TX/ERROR are deliberately kept in ONE queue.
+// LED and sound belong to the same event, so they
+// cannot drift apart and a following event cannot
+// interrupt the previous one.
+//
+// Event order:
+// RX -> pause -> TX -> pause -> ERROR
+//
+
+enum EventType {
+  EVENT_NONE,
+  EVENT_RX,
+  EVENT_TX,
+  EVENT_ERROR
+};
+
+const byte EVENT_QUEUE_SIZE = 8;
+
+EventType eventQueue[EVENT_QUEUE_SIZE];
+byte eventQueueHead = 0;
+byte eventQueueTail = 0;
+byte eventQueueCount = 0;
+
+EventType activeEvent = EVENT_NONE;
+unsigned long eventTimer = 0;
+bool eventPause = false;
+
+
+// ============================================
+// MODE INDICATION
+// ============================================
 
 IndicatorMode currentMode = IND_SERVICE;
+
 byte modeStep = 0;
 unsigned long modeTimer = 0;
 
+
+// ============================================
+// BUTTON
+// ============================================
+
 bool lastButtonReading = HIGH;
 bool stableButtonState = HIGH;
+
 unsigned long buttonChangeTime = 0;
 unsigned long buttonPressTime = 0;
+
 bool buttonEvent = false;
 bool buttonHoldTriggered = false;
 
-enum SoundType {
-  SOUND_NONE,
-  SOUND_RX,
-  SOUND_TX,
-  SOUND_ERROR,
-  SOUND_BEEP
-};
 
-struct SoundItem {
-  SoundType type;
-  byte count;
-};
+// ============================================
+// BUZZER
+// ============================================
 
-const byte SOUND_QUEUE_SIZE = 8;
-SoundItem soundQueue[SOUND_QUEUE_SIZE];
-byte soundQueueHead = 0;
-byte soundQueueTail = 0;
-byte soundQueueCount = 0;
-bool soundActive = false;
-bool soundPause = false;
-unsigned long soundTimer = 0;
-byte soundBeepCount = 0;
-byte soundBeepStep = 0;
+bool beepActive = false;
+byte beepCount = 0;
+byte beepStep = 0;
+unsigned long beepTimer = 0;
+bool beepPause = false;
 
-void queueSound(SoundType type, byte count = 1) {
-  if (soundQueueCount >= SOUND_QUEUE_SIZE) {
+
+// ============================================
+// EVENT QUEUE
+// ============================================
+
+void queueEvent(EventType type) {
+  if (eventQueueCount >= EVENT_QUEUE_SIZE) {
     return;
   }
 
-  soundQueue[soundQueueTail].type = type;
-  soundQueue[soundQueueTail].count = count;
+  eventQueue[eventQueueTail] = type;
 
-  soundQueueTail++;
-  if (soundQueueTail >= SOUND_QUEUE_SIZE) {
-    soundQueueTail = 0;
+  eventQueueTail++;
+  if (eventQueueTail >= EVENT_QUEUE_SIZE) {
+    eventQueueTail = 0;
   }
 
-  soundQueueCount++;
+  eventQueueCount++;
 }
 
-void startSound(SoundType type, byte count) {
-  soundActive = true;
-  soundPause = false;
-  soundTimer = millis();
-  soundBeepCount = count;
-  soundBeepStep = 0;
+
+// ============================================
+// ALL EVENT LEDS OFF
+// ============================================
+
+void allEventLedsOff() {
+  digitalWrite(LED_RX, LOW);
+  digitalWrite(LED_TX, LOW);
+  digitalWrite(LED_ERROR, LOW);
+}
+
+
+// ============================================
+// START EVENT
+// ============================================
+
+void startEvent(EventType type) {
+  allEventLedsOff();
+
+  activeEvent = type;
+  eventTimer = millis();
+  eventPause = false;
 
   switch (type) {
-    case SOUND_RX:
+
+    case EVENT_RX:
+      digitalWrite(LED_RX, HIGH);
       tone(BUZZER, SOUND_RX_FREQ);
       break;
-    case SOUND_TX:
+
+    case EVENT_TX:
+      digitalWrite(LED_TX, HIGH);
       tone(BUZZER, SOUND_TX_FREQ);
       break;
-    case SOUND_ERROR:
+
+    case EVENT_ERROR:
+      digitalWrite(LED_ERROR, HIGH);
       tone(BUZZER, SOUND_ERROR_FREQ);
       break;
-    case SOUND_BEEP:
-      tone(BUZZER, 2000);
-      break;
+
     default:
+      activeEvent = EVENT_NONE;
       noTone(BUZZER);
-      soundActive = false;
       break;
   }
 }
 
-unsigned long getSoundDuration(SoundType type) {
+
+// ============================================
+// EVENT DURATION
+// ============================================
+
+unsigned long getEventDuration(EventType type) {
+
   switch (type) {
-    case SOUND_RX: return SOUND_RX_TIME;
-    case SOUND_TX: return SOUND_TX_TIME;
-    case SOUND_ERROR: return SOUND_ERROR_TIME;
-    case SOUND_BEEP: return 100;
-    default: return 0;
+
+    case EVENT_RX:
+      return SOUND_RX_TIME;
+
+    case EVENT_TX:
+      return SOUND_TX_TIME;
+
+    case EVENT_ERROR:
+      return SOUND_ERROR_TIME;
+
+    default:
+      return 0;
   }
 }
 
-void updateSound() {
+
+// ============================================
+// EVENT UPDATE
+// ============================================
+
+void updateEvents() {
+
   unsigned long now = millis();
 
-  if (soundActive) {
-    SoundType type =
-      soundQueue[
-        (soundQueueHead + SOUND_QUEUE_SIZE - soundQueueCount)
-        % SOUND_QUEUE_SIZE
-      ].type;
+  // ------------------------------------------
+  // CURRENT EVENT
+  // ------------------------------------------
 
-    if (type == SOUND_RX ||
-        type == SOUND_TX ||
-        type == SOUND_ERROR) {
+  if (activeEvent != EVENT_NONE) {
 
-      if (now - soundTimer >= getSoundDuration(type)) {
-        noTone(BUZZER);
-        soundActive = false;
-        soundPause = true;
-        soundTimer = now;
-      }
+    if (now - eventTimer >= getEventDuration(activeEvent)) {
 
-      return;
+      noTone(BUZZER);
+      allEventLedsOff();
+
+      activeEvent = EVENT_NONE;
+      eventPause = true;
+      eventTimer = now;
     }
 
-    if (type == SOUND_BEEP) {
-      if (!soundPause) {
-        if (now - soundTimer >= 100) {
-          noTone(BUZZER);
-          soundBeepStep++;
-          soundTimer = now;
-
-          if (soundBeepStep >= soundBeepCount) {
-            soundActive = false;
-            soundPause = true;
-          }
-        }
-      }
-
-      return;
-    }
+    return;
   }
 
-  if (soundPause) {
-    if (now - soundTimer < SOUND_PAUSE) {
+
+  // ------------------------------------------
+  // PAUSE BETWEEN EVENTS
+  // ------------------------------------------
+
+  if (eventPause) {
+
+    if (now - eventTimer < SOUND_PAUSE) {
       return;
     }
-    soundPause = false;
+
+    eventPause = false;
   }
 
-  if (!soundActive && soundQueueCount > 0) {
-    SoundType type = soundQueue[soundQueueHead].type;
-    byte count = soundQueue[soundQueueHead].count;
 
-    soundQueueHead++;
-    if (soundQueueHead >= SOUND_QUEUE_SIZE) {
-      soundQueueHead = 0;
+  // ------------------------------------------
+  // START NEXT EVENT
+  // ------------------------------------------
+
+  if (eventQueueCount > 0) {
+
+    EventType type = eventQueue[eventQueueHead];
+
+    eventQueueHead++;
+
+    if (eventQueueHead >= EVENT_QUEUE_SIZE) {
+      eventQueueHead = 0;
     }
 
-    soundQueueCount--;
-    startSound(type, count);
+    eventQueueCount--;
+
+    startEvent(type);
   }
 }
 
+
+// ============================================
+// MODE BEEP
+// ============================================
+
+void updateBeep() {
+
+  unsigned long now = millis();
+
+  if (beepActive) {
+
+    if (now - beepTimer >= 100) {
+
+      noTone(BUZZER);
+
+      beepStep++;
+      beepTimer = now;
+
+      if (beepStep >= beepCount) {
+
+        beepActive = false;
+        beepPause = true;
+      }
+      else {
+
+        tone(BUZZER, 2000);
+      }
+    }
+
+    return;
+  }
+
+  if (beepPause) {
+
+    if (now - beepTimer < SOUND_PAUSE) {
+      return;
+    }
+
+    beepPause = false;
+  }
+}
+
+
+// ============================================
+// BEGIN
+// ============================================
+
 void Indicators::begin() {
+
   pinMode(LED_RX, OUTPUT);
   pinMode(LED_TX, OUTPUT);
   pinMode(LED_ERROR, OUTPUT);
   pinMode(LED_MODE, OUTPUT);
+
   pinMode(BUZZER, OUTPUT);
+
   pinMode(BUTTON, INPUT_PULLUP);
 
   digitalWrite(LED_RX, LOW);
@@ -195,89 +327,191 @@ void Indicators::begin() {
   noTone(BUZZER);
 
   currentMode = IND_SERVICE;
+
   modeStep = 0;
   modeTimer = millis();
-  soundQueueHead = 0;
-  soundQueueTail = 0;
-  soundQueueCount = 0;
-  soundActive = false;
-  soundPause = false;
+
+  eventQueueHead = 0;
+  eventQueueTail = 0;
+  eventQueueCount = 0;
+  activeEvent = EVENT_NONE;
+  eventTimer = millis();
+  eventPause = false;
+
+  beepActive = false;
+  beepCount = 0;
+  beepStep = 0;
+  beepTimer = 0;
+  beepPause = false;
+
+  allEventLedsOff();
 }
+
+
+// ============================================
+// RX INDICATION
+// ============================================
 
 void Indicators::rx() {
-  rxUntil = millis() + EVENT_LED_TIME;
-  queueSound(SOUND_RX);
+  queueEvent(EVENT_RX);
 }
+
+
+// ============================================
+// TX INDICATION
+// ============================================
 
 void Indicators::tx() {
-  txUntil = millis() + EVENT_LED_TIME;
-  queueSound(SOUND_TX);
+  queueEvent(EVENT_TX);
 }
+
+
+// ============================================
+// ERROR INDICATION
+// ============================================
 
 void Indicators::error() {
-  errorUntil = millis() + 300;
-  queueSound(SOUND_ERROR);
+  queueEvent(EVENT_ERROR);
 }
 
+
+// ============================================
+// SET MODE
+// ============================================
+
 void Indicators::setMode(IndicatorMode mode) {
+
   currentMode = mode;
+
   modeStep = 0;
   modeTimer = millis();
 
   byte count = 1;
-  if (mode == IND_SLAVE) count = 2;
-  if (mode == IND_MASTER) count = 3;
+
+  if (mode == IND_SLAVE) {
+    count = 2;
+  }
+
+  if (mode == IND_MASTER) {
+    count = 3;
+  }
+
   beep(count);
 }
+
+
+// ============================================
+// GET MODE
+// ============================================
 
 IndicatorMode Indicators::getMode() {
   return currentMode;
 }
 
+
+// ============================================
+// BUTTON EVENT
+// ============================================
+
 bool Indicators::buttonPressed() {
+
   if (buttonEvent) {
+
     buttonEvent = false;
+
     return true;
   }
+
   return false;
 }
 
+
+// ============================================
+// BEEP
+// ============================================
+
 void Indicators::beep(byte count) {
-  queueSound(SOUND_BEEP, count);
+
+  // Если сейчас идёт Modbus-индикация,
+  // не запускаем beep поверх неё.
+  if (activeEvent != EVENT_NONE || eventPause) {
+    return;
+  }
+
+
+  beepCount = count;
+  beepStep = 0;
+  beepTimer = millis();
+  beepActive = true;
+  beepPause = false;
+
+  tone(BUZZER, 2000);
 }
 
+
+// ============================================
+// UPDATE
+// ============================================
+
 void Indicators::update() {
+
   unsigned long now = millis();
 
-  digitalWrite(LED_RX, now < rxUntil);
-  digitalWrite(LED_TX, now < txUntil);
-  digitalWrite(LED_ERROR, now < errorUntil);
+
+  // ==========================================
+  // RX / TX / ERROR
+  // ==========================================
+
+  updateEvents();
+
+
+  // ==========================================
+  // MODE LED
+  // ==========================================
 
   byte modeCount = 1;
-  if (currentMode == IND_SLAVE) modeCount = 2;
-  if (currentMode == IND_MASTER) modeCount = 3;
+
+  if (currentMode == IND_SLAVE) {
+    modeCount = 2;
+  }
+
+  if (currentMode == IND_MASTER) {
+    modeCount = 3;
+  }
+
 
   if (modeStep < modeCount) {
+
     unsigned long elapsed = now - modeTimer;
 
     if (elapsed < MODE_ON_TIME) {
       digitalWrite(LED_MODE, HIGH);
     }
     else {
+
       digitalWrite(LED_MODE, LOW);
+
       if (elapsed >= MODE_ON_TIME + MODE_OFF_TIME) {
         modeStep++;
         modeTimer = now;
       }
     }
   }
+
   else {
+
     digitalWrite(LED_MODE, LOW);
+
     if (now - modeTimer >= MODE_PAUSE) {
       modeStep = 0;
       modeTimer = now;
     }
   }
+
+
+  // ==========================================
+  // BUTTON
+  // ==========================================
 
   bool reading = digitalRead(BUTTON);
 
@@ -286,15 +520,20 @@ void Indicators::update() {
   }
 
   if (now - buttonChangeTime >= BUTTON_DEBOUNCE) {
+
     if (reading != stableButtonState) {
+
       stableButtonState = reading;
 
       if (stableButtonState == LOW) {
+
         buttonPressTime = now;
         buttonEvent = false;
         buttonHoldTriggered = false;
       }
+
       else {
+
         buttonPressTime = 0;
         buttonHoldTriggered = false;
       }
@@ -303,15 +542,26 @@ void Indicators::update() {
 
   lastButtonReading = reading;
 
+
+  // ==========================================
+  // BUTTON HOLD > 2 SEC
+  // ==========================================
+
   if (stableButtonState == LOW &&
       buttonPressTime != 0 &&
       !buttonHoldTriggered) {
 
     if (now - buttonPressTime >= BUTTON_HOLD) {
+
       buttonEvent = true;
       buttonHoldTriggered = true;
     }
   }
 
-  updateSound();
+
+  // ==========================================
+  // MODE BEEP
+  // ==========================================
+
+  updateBeep();
 }
