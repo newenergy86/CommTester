@@ -1,6 +1,7 @@
 #include "indicators.h"
 #include "serial_console.h"
 #include "modbus_slave.h"
+#include "display.h"
 
 #include <string.h>
 
@@ -13,6 +14,7 @@ void setup() {
   Serial.begin(115200);
 
   Indicators::begin();
+  Display::begin();
 
 
   // ------------------------------------------
@@ -58,6 +60,8 @@ void loop() {
   // ------------------------------------------
 
   IndicatorMode mode = Indicators::getMode();
+
+  Display::update(mode);
 
 
   // ------------------------------------------
