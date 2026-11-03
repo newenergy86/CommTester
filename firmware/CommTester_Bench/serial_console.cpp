@@ -27,7 +27,9 @@ SoftwareSerial rs232(RS232_RX, RS232_TX);
 // COMMAND BUFFER
 // ============================================
 
-String commandBuffer = "";
+// 32 characters + terminating null byte.
+char commandBuffer[33];
+byte commandLength = 0;
 
 bool commandReady = false;
 
@@ -40,7 +42,8 @@ void SerialConsole::begin() {
 
   rs232.begin(RS232_BAUD);
 
-  commandBuffer = "";
+  commandLength = 0;
+  commandBuffer[0] = '\0';
   commandReady = false;
 }
 
@@ -51,14 +54,15 @@ void SerialConsole::begin() {
 
 void SerialConsole::update() {
 
-  while (rs232.available()) {
+  // Do not overwrite a command before the caller consumes it.
+  while (rs232.available() && !commandReady) {
 
     char c = rs232.read();
 
     // Отладка через USB Serial
-    Serial.print("RX char: [");
+    Serial.print(F("RX char: ["));
     Serial.print(c);
-    Serial.println("]");
+    Serial.println(F("]"));
 
 
     // ----------------------------------------
@@ -67,8 +71,8 @@ void SerialConsole::update() {
 
     if (c == '\r' || c == '\n') {
 
-      if (commandBuffer.length() > 0) {
-
+      if (commandLength > 0) {
+        commandBuffer[commandLength] = '\0';
         commandReady = true;
       }
 
@@ -80,9 +84,9 @@ void SerialConsole::update() {
     // NORMAL CHARACTER
     // ----------------------------------------
 
-    if (commandBuffer.length() < 32) {
-
-      commandBuffer += c;
+    if (commandLength < 32) {
+      commandBuffer[commandLength++] = c;
+      commandBuffer[commandLength] = '\0';
     }
   }
 }
@@ -102,22 +106,50 @@ bool SerialConsole::available() {
 // GET COMMAND
 // ============================================
 
-String SerialConsole::getCommand() {
+const char* SerialConsole::getCommand() {
 
   if (!commandReady) {
-
     return "";
   }
 
-  String result = commandBuffer;
+  // Trim leading whitespace.
+  byte start = 0;
+  while (commandBuffer[start] == ' ' ||
+         commandBuffer[start] == '\t' ||
+         commandBuffer[start] == '\r' ||
+         commandBuffer[start] == '\n') {
+    start++;
+  }
 
-  commandBuffer = "";
+  // Trim trailing whitespace.
+  byte end = commandLength;
+  while (end > start &&
+         (commandBuffer[end - 1] == ' ' ||
+          commandBuffer[end - 1] == '\t' ||
+          commandBuffer[end - 1] == '\r' ||
+          commandBuffer[end - 1] == '\n')) {
+    end--;
+  }
+
+  byte length = end - start;
+
+  if (start > 0 && length > 0) {
+    memmove(commandBuffer, commandBuffer + start, length);
+  }
+
+  commandBuffer[length] = '\0';
+
+  // Convert ASCII lowercase to uppercase.
+  for (byte i = 0; i < length; i++) {
+    if (commandBuffer[i] >= 'a' && commandBuffer[i] <= 'z') {
+      commandBuffer[i] -= ('a' - 'A');
+    }
+  }
+
   commandReady = false;
+  commandLength = 0;
 
-  result.trim();
-  result.toUpperCase();
-
-  return result;
+  return commandBuffer;
 }
 
 
@@ -125,7 +157,7 @@ String SerialConsole::getCommand() {
 // PRINT
 // ============================================
 
-void SerialConsole::print(const String &text) {
+void SerialConsole::print(const __FlashStringHelper *text) {
 
   rs232.print(text);
 }
@@ -135,7 +167,7 @@ void SerialConsole::print(const String &text) {
 // PRINTLN
 // ============================================
 
-void SerialConsole::println(const String &text) {
+void SerialConsole::println(const __FlashStringHelper *text) {
 
   rs232.println(text);
 }
