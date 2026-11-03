@@ -475,3 +475,57 @@ The first complete-function run before resetting the Nano reported mismatches in
 ### NEXT STEP
 
 Begin the OLED integration feasibility step: identify a suitable page-buffered SSD1306 driver and determine its actual SRAM footprint before integrating it into the firmware.
+
+
+---
+
+## CHECKPOINT-29 — SSD1306 OLED status-screen integration (verification pending)
+
+### FACTS
+
+- The user compiled the standalone U8g2 SSD1306 128×64 test sketch for Arduino Nano:
+  - Flash: 11,060 bytes (36%).
+  - Global SRAM: 710 bytes (34%).
+  - Compiler-reported remaining SRAM: 1,338 bytes.
+- The user connected the OLED and confirmed that it starts and renders without visible problems.
+- The standalone test uses the U8g2 page-buffer constructor `U8G2_SSD1306_128X64_NONAME_1_HW_I2C`.
+
+### CHANGE
+
+- Added `firmware/CommTester_Bench/display.h` and `display.cpp`.
+- Added the display module to the main sketch.
+- Initialized the display during setup and update the screen only when the operating mode changes.
+- The initial status screen shows:
+  - CommTester heading;
+  - SERVICE or SLAVE mode;
+  - RS-232 9600 8N1;
+  - Slave ID 1;
+  - button mode-switch hint.
+- Uses U8g2 `_1_` page buffer and hardware I²C (Nano A4/SDA, A5/SCL).
+- No changes were made to Modbus transport, Slave processing, SERVICE command handling, indicator logic, or external libraries.
+
+### SOURCE COMMITS
+
+- `display.h`: `97f94e3d362e464f3554b88991ed2bbce66c24f4`
+- `display.cpp`: `9b64133c81da4a62879a87c94b391fce059d3b28`
+- Main sketch integration: `fffe34ddd587888710d39cfd227aa53a8acbcd25`
+- Project status update: `1f70c45f584e47bc9408c7fe0c37e762511e9943`
+
+### TEST
+
+- Standalone OLED compile: PASS, user-reported.
+- Standalone physical OLED startup/rendering: PASS, user-reported.
+- Complete CommTester firmware compile with U8g2: NOT YET RUN.
+- Integrated Flash/SRAM measurement: NOT YET RUN.
+- SERVICE regression with OLED enabled: NOT YET RUN.
+- Modbus Slave regression with OLED enabled: NOT YET RUN.
+
+### DECISION
+
+- Keep the selected SSD1306 + U8g2 `_1_` implementation as the integration candidate.
+- The first integration is deliberately limited to a mode/status screen. Packet decoding and detailed frame presentation are deferred until the display-enabled firmware passes compile and regression checks.
+- Do not change the existing Modbus or SERVICE implementation as part of this step.
+
+### NEXT STEP
+
+Compile `firmware/CommTester_Bench/CommTester_Bench.ino` for Arduino Nano with U8g2 installed. Record Flash and global SRAM usage and report any compiler errors. Do not proceed to protocol/UI expansion until the integrated build is verified.
