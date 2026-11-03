@@ -181,3 +181,61 @@ Compile the current Nano firmware, record Flash and global SRAM usage, then run 
 ### BLOCKERS
 
 No confirmed technical blocker. Resource margin and runtime regression remain unverified.
+---
+
+## CHECKPOINT-23 — SERVICE console SRAM optimization
+
+### CHANGE
+
+- Replaced the dynamic String command buffer with a fixed 33-byte character buffer (32 command characters plus null terminator).
+- Changed command retrieval to return a pointer to the internal buffer; removed the temporary String copy.
+- Preserved trimming of leading/trailing whitespace and case-insensitive command handling by converting ASCII lowercase characters to uppercase.
+- Moved fixed diagnostic and response string literals in the main sketch to program memory using the Arduino F() macro.
+- Updated the console print interface to accept flash-resident strings.
+
+### FACTS
+
+The user compiled the updated firmware for Arduino Nano and reported:
+
+- Flash: 11,032 bytes (35% of 30,720 bytes).
+- Global SRAM: 1,148 bytes (56% of 2,048 bytes).
+- Remaining SRAM reported by the compiler: 900 bytes.
+
+Compared with the immediately preceding build report:
+
+- Flash decreased from 11,952 to 11,032 bytes: 920 bytes saved.
+- Global SRAM decreased from 1,398 to 1,148 bytes: 250 bytes saved.
+- Compiler-reported remaining SRAM increased from 650 to 900 bytes.
+
+The user reports that SERVICE command operation appears functional after the change. PING returns PONG and RX/TX LED indications are observed. SERVICE command checks were reported informally; a complete regression record is not yet available.
+
+### SOUND OBSERVATION
+
+The user reports that the piezo produces the RX tone consistently, while the TX tone is intermittent during PING.
+
+Source inspection identifies a likely software interaction, not yet confirmed by a dedicated timing experiment:
+
+- PING queues RX and TX indication events and also calls the separate Indicators::beep(1).
+- The event queue and the standalone beep state machine both control the same buzzer pin.
+- updateEvents() runs before updateBeep() in Indicators::update(). The standalone beep may therefore call noTone() during an RX/TX event and truncate its tone.
+
+This is recorded as a source-level hypothesis pending a focused test. No indicator code was changed in this checkpoint.
+
+### DECISIONS
+
+- Keep the fixed-buffer SERVICE console implementation as the new candidate baseline.
+- Do not change the indicator sound logic until the RX/TX/beep interaction is isolated and tested.
+- Record configurable RS-232 parameters and configurable Slave ID as future SERVICE-console requirements; implementation is deferred.
+- Do not reduce Modbus data map sizes or alter external libraries as part of this optimization.
+
+### TEST
+
+- Arduino Nano compile: PASS, according to the user's build report.
+- SERVICE PING/PONG and LED indication: reported working.
+- SERVICE HELP, INFO, MODE and whitespace/case variations: not individually confirmed in the latest report.
+- Full Modbus Slave hardware regression after this console change: NOT RUN / NOT CONFIRMED.
+- Sound overlap diagnosis: source-level hypothesis; dedicated test NOT RUN.
+
+### NEXT STEP
+
+Treat the SRAM optimization as successful at compile level. Before further memory changes, perform the Modbus Slave regression and isolate the SERVICE buzzer overlap with a minimal test. Keep the reported 1,148-byte global SRAM usage as the new build baseline.
