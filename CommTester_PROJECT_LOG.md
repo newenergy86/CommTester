@@ -529,3 +529,42 @@ Begin the OLED integration feasibility step: identify a suitable page-buffered S
 ### NEXT STEP
 
 Compile `firmware/CommTester_Bench/CommTester_Bench.ino` for Arduino Nano with U8g2 installed. Record Flash and global SRAM usage and report any compiler errors. Do not proceed to protocol/UI expansion until the integrated build is verified.
+
+
+---
+
+## CHECKPOINT-30 — Integrated U8g2 build: SRAM margin insufficient
+
+### TEST
+
+The user compiled the complete OLED-integrated CommTester firmware for Arduino Nano and reported:
+
+- Flash: 21,154 bytes (68%).
+- Global SRAM: 1,726 bytes (84%).
+- Compiler-reported remaining SRAM: 322 bytes.
+
+Compared with the pre-OLED baseline from CHECKPOINT-28:
+
+- Flash increased from 11,116 to 21,154 bytes (+10,038 bytes).
+- Global SRAM increased from 990 to 1,726 bytes (+736 bytes).
+- Compiler-reported remaining SRAM decreased from 1,058 to 322 bytes.
+
+The standalone OLED test previously reported 710 bytes of global SRAM and 1,338 bytes remaining. The complete firmware's additional memory usage reflects the combined firmware and display/library integration; it must not be attributed solely to the 128-byte page buffer.
+
+### FACTS
+
+- The integrated firmware compiles.
+- The 322-byte compiler-reported remainder is not a runtime stack measurement and is too small to accept as a safe operating margin for this application.
+- No display-enabled firmware flash or runtime regression has been performed.
+- The existing pre-OLED SERVICE/SLAVE baseline remains the last verified firmware baseline.
+
+### DECISION
+
+- Do not flash or accept the current U8g2 graphics-mode integration as a working firmware baseline.
+- Preserve the current source as an experimental checkpoint; do not alter the verified Modbus/SERVICE logic.
+- Before considering a different external library, test the U8X8 text-only mode provided by the same U8g2 package. This avoids changing the external dependency and removes the graphics/page-buffer requirement.
+- Evaluate a no-framebuffer graphics driver only if U8X8 does not provide a sufficient display and SRAM margin.
+
+### NEXT STEP
+
+Perform a controlled compile-only experiment using U8X8 text mode in a temporary copy of the display module. Compare Flash and global SRAM against the current 21,154-byte / 1,726-byte integrated build. Do not flash until an acceptable memory margin and runtime test plan are established.
