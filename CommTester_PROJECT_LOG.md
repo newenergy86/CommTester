@@ -131,3 +131,53 @@ Compile the updated sketch with the existing Arduino Nano board and dependencies
 ### BLOCKERS
 
 The exact SRAM and Flash savings are TBD until the updated firmware is compiled with the same board package and library versions as the baseline.
+
+
+---
+
+## CHECKPOINT-22 — Roadmap clarified for Nano prototype and future MCU revision
+
+### CURRENT STATE
+
+The active Arduino Nano / ATmega328P firmware is reduced to SERVICE and Modbus SLAVE. PING/PONG remains part of SERVICE. The Modbus Slave baseline is retained.
+
+### FACTS
+
+- The latest `main` source tree contains no active `modbus_master.cpp/.h` files.
+- `CommTester_Bench.ino` initializes SERVICE and SLAVE and switches only between `IND_SERVICE` and `IND_SLAVE`.
+- The current indicator enum contains only SERVICE and SLAVE.
+- The Master implementation was removed from the active tree in commits immediately preceding this checkpoint. Git history retains the deleted source revision.
+- The current source-level Master removal was recorded in CHECKPOINT-21, but Arduino compilation, memory reporting and hardware regression were explicitly NOT RUN there.
+
+### DECISIONS
+
+- Treat the Nano firmware as the first resource-constrained prototype, not as the final feature limit of CommTester.
+- Keep the tested Slave and SERVICE/PING-PONG functionality on Nano.
+- Defer Modbus Master on Nano; plan to restore Master on a future, more capable MCU revision of CommTester.
+- The future MCU is TBD and will be selected against Flash, SRAM, hardware UART, display and interface requirements.
+- Evaluate OLED 128×64 first using a page-buffered driver. Keep LCD 1602A as a fallback.
+- A 1602A may show compact status and packet summaries across multiple pages; it cannot display a detailed frame and all decoded fields simultaneously.
+
+### OPEN QUESTIONS
+
+- Actual Flash and SRAM usage of the current Nano firmware.
+- SRAM margin after runtime stack and display driver are included.
+- Practical OLED page layout and memory usage.
+- Whether a multi-page 1602A interface is sufficiently informative for field diagnostics.
+- Future MCU selection.
+
+### NEXT STEP
+
+Compile the current Nano firmware, record Flash and global SRAM usage, then run the existing Slave regression suite. Use measured memory and test results to choose OLED or 1602A.
+
+### TEST
+
+- GitHub source inspection: PASS for SERVICE/SLAVE-only active firmware.
+- Documentation consistency update: recorded in this checkpoint.
+- Arduino compile: NOT RUN.
+- Flash/SRAM measurement: NOT RUN.
+- Slave hardware regression: NOT RUN.
+
+### BLOCKERS
+
+No confirmed technical blocker. Resource margin and runtime regression remain unverified.
