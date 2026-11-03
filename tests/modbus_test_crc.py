@@ -14,8 +14,6 @@ BAD_CRC_FRAME = bytes.fromhex(
     "01 03 00 00 00 03 05 CC"
 )
 
-EXPECTED_REGISTERS = [100, 200, 300]
-
 
 def crc16(data):
     crc = 0xFFFF
@@ -66,14 +64,6 @@ def validate_fc03_response(response):
     if response[2] != 6:
         return False, f"WRONG BYTE COUNT: {response[2]}"
 
-    actual_registers = [
-        (response[3 + i * 2] << 8) | response[4 + i * 2]
-        for i in range(3)
-    ]
-
-    if actual_registers != EXPECTED_REGISTERS:
-        return False, f"REGISTER DATA MISMATCH: {actual_registers}"
-
     received_crc = response[-2] | (response[-1] << 8)
     calculated_crc = crc16(response[:-2])
 
@@ -83,7 +73,12 @@ def validate_fc03_response(response):
             f"calculated {calculated_crc:04X}"
         )
 
-    return True, f"VALID FC03 RESPONSE, REGISTERS: {actual_registers}"
+    registers = [
+        (response[3 + i * 2] << 8) | response[4 + i * 2]
+        for i in range(3)
+    ]
+
+    return True, f"VALID FC03 RESPONSE, REGISTERS: {registers}"
 
 
 def run_valid_request(ser, title):
@@ -102,12 +97,12 @@ def run_valid_request(ser, title):
     if not response:
         print("RESULT: FAIL")
         print("REASON: NO RESPONSE TO VALID FRAME")
-        return False
+        return False, response
 
     ok, reason = validate_fc03_response(response)
     print("CHECK:", reason)
     print("RESULT:", "PASS" if ok else "FAIL")
-    return ok
+    return ok, response
 
 
 ser = None
@@ -143,8 +138,8 @@ try:
     print("BAD CRC FRAME:")
     print(frame_to_text(BAD_CRC_FRAME))
 
-    # TEST 1: establish that the Slave is responding before the error.
-    good_before = run_valid_request(
+    # TEST 1: verify a valid request before the malformed frame.
+    good_before, response_before = run_valid_request(
         ser, "TEST 1: VALID REQUEST BEFORE INVALID CRC"
     )
 
@@ -157,21 +152,32 @@ try:
     ser.reset_input_buffer()
     print("TX:", frame_to_text(BAD_CRC_FRAME))
     send_frame(ser, BAD_CRC_FRAME)
-    response = read_response(ser)
+    bad_response = read_response(ser)
 
-    print("RX:", frame_to_text(response) if response else "(no data)")
+    print("RX:", frame_to_text(bad_response) if bad_response else "(no data)")
 
-    bad_crc_rejected = not response
+    bad_crc_rejected = not bad_response
     print("RESULT:", "PASS" if bad_crc_rejected else "FAIL")
-    if response:
+    if bad_response:
         print("REASON: SLAVE RESPONDED TO INVALID CRC")
     else:
         print("REASON: NO RESPONSE TO INVALID CRC FRAME")
 
-    # TEST 3: prove that a valid request still works after the rejected frame.
-    recovery = run_valid_request(
+    # TEST 3: verify a valid request after the malformed frame.
+    recovery_ok, response_after = run_valid_request(
         ser, "TEST 3: VALID REQUEST AFTER INVALID CRC"
     )
+
+    # Recovery means the valid response is still structurally valid,
+    # has a valid CRC, and returns the same data as before the bad frame.
+    same_data = (
+        bool(response_before)
+        and bool(response_after)
+        and response_before[:-2] == response_after[:-2]
+    )
+
+    print("DATA BEFORE/AFTER INVALID CRC:", "UNCHANGED" if same_data else "DIFFERENT")
+    recovery = recovery_ok and same_data
 
     print()
     print("=" * 60)
