@@ -297,3 +297,54 @@ This confirms the four read paths on the current firmware after the SERVICE cons
 ### NEXT STEP
 
 Test write functions FC05, FC06, FC15 and FC16, then read back the written values. After that, test invalid CRC rejection and recovery.
+
+
+---
+
+## CHECKPOINT-26 — Complete Modbus RTU function regression
+
+### TEST
+
+The user ran the existing `tests/modbus_test_all.py` against the current CommTester firmware.
+
+Test configuration:
+- Serial port: COM7
+- Baud rate: 9600
+- Format: 8N1
+- Slave ID: 1
+
+All 10 test cases reported PASS:
+
+- FC01 — Read Coils: PASS
+- FC02 — Read Discrete Inputs: PASS
+- FC03 — Read Holding Registers at addresses 0 and 120: PASS
+- FC04 — Read Input Registers at addresses 0 and 120: PASS
+- FC05 — Write Single Coil and read-back: PASS
+- FC06 — Write Single Holding Register and read-back: PASS
+- FC15 — Write Multiple Coils (16 bits) and read-back: PASS
+- FC16 — Write Multiple Holding Registers (5 registers) and read-back: PASS
+
+The test output reports `OVERALL RESULT: PASS`.
+
+Read-back values matched the expected values for all tested write operations. Reads at address 120 returned the expected final five values in both register tables. The script also validated CRCs of received responses.
+
+### FACTS
+
+- This is a user-reported hardware test of the current firmware, not merely a source-level review.
+- All eight implemented Modbus Slave function codes are confirmed by the current run.
+- The complete function regression also confirms the tested read/write paths and their read-back behavior.
+
+### LIMITATIONS
+
+- This script validates CRCs on received responses; it does not test rejection of a request carrying an intentionally invalid CRC.
+- Recovery after an invalid-CRC request is therefore NOT CONFIRMED by this checkpoint.
+- RTU inter-byte gap behavior is not covered by this complete function test.
+
+### DECISION
+
+- Retain the current Modbus Slave implementation as the verified functional baseline.
+- Do not modify firmware after this successful regression without a separately identified defect or requirement.
+
+### NEXT STEP
+
+Run the dedicated invalid-CRC test and verify that the Slave rejects the malformed request without responding, then confirm that a subsequent valid request is processed normally.
