@@ -2,20 +2,52 @@
 
 ## Project purpose
 
-CommTester is a compact portable Modbus/RS-232 line tester based on Arduino Nano.
+CommTester is a portable diagnostic tester for Modbus RTU and serial communication lines.
 
-The device is intended to be useful as a practical field diagnostic tool and as a development/test platform for the larger diagnostic instrument being developed separately.
+Development is staged:
 
-The compact tester and the future main diagnostic instrument are separate projects and must not be conflated in architectural decisions.
+- **Nano prototype:** Arduino Nano / ATmega328P. It preserves and validates the core hardware and protocol functionality within strict Flash/SRAM limits.
+- **Future full-featured hardware revision:** replace the Nano with a more capable MCU. This is an evolution of the same CommTester project, not a reason to discard the Nano firmware or its verified protocol work.
 
-## Current architecture
+The Nano prototype is intentionally a reduced implementation. Features excluded because of its resource limits remain part of the long-term CommTester scope.
 
-- MCU: Arduino Nano / ATmega328P
-- Serial communication: current implementation uses the project's `ModbusRTU` transport layer and an external `ModbusADU` dependency.
-- Modbus Slave: implemented and tested.
-- Modbus Master: excluded from the compact tester by project decision.
-- Indicators: LED and sound indication are implemented and being tested.
-- Display: planned; hardware selection and integration are TBD.
+## Current Nano prototype architecture
+
+- MCU: Arduino Nano / ATmega328P.
+- Physical interface: RS-232 through MAX238.
+- Serial transport: project-specific `ModbusRTU` layer and external `ModbusADU` dependency.
+- SERVICE: PING/PONG and diagnostic text commands.
+- Modbus: Slave only.
+- Indicators: RX/TX/ERROR/MODE LEDs, buzzer and mode button.
+- Display: not yet selected or integrated.
+
+### Current operating modes
+
+- `SERVICE` — serial diagnostics, including PING → PONG.
+- `SLAVE` — responds to external Modbus RTU Master requests.
+
+### Features deferred on Nano
+
+- Modbus Master.
+- Simultaneous or combined Master/Slave line testing.
+- More extensive packet and diagnostic presentation.
+
+These features are not rejected. They are deferred to a future MCU revision because the ATmega328P has limited Flash and 2 KB SRAM, and the current prototype also needs display/UI resources.
+
+## Long-term feature scope
+
+The future full-featured CommTester hardware revision is intended to support:
+
+- Modbus RTU Master;
+- Modbus RTU Slave;
+- SERVICE and PING/PONG;
+- line diagnostics and traffic statistics;
+- packet information and display UI;
+- further diagnostic functions as hardware permits.
+
+The future MCU is **TBD**. Selection criteria include sufficient Flash and SRAM, suitable hardware UART resources, display support, and compatibility with the planned RS-232/RS-485 interfaces.
+
+**Important:** keep the current Nano implementation working and preserve its verified protocol modules. Master code removed from the active Nano sketch remains available in Git history and can be recovered when the full-featured hardware revision is started.
 
 ## Modbus Slave status
 
@@ -39,16 +71,25 @@ CRC handling has also been tested:
 
 RTU inter-byte timing behavior has been tested with normal frames and deliberate gaps. The exact boundary behavior is recorded in the project log and must not be inferred beyond the performed tests.
 
+## Display options
+
+Two small display paths remain under consideration:
+
+- **OLED 128×64:** preferred initial option if it can be integrated with a page-buffered driver and adequate SRAM remains.
+- **LCD 1602A (16×2):** fallback option. It can show essential status and packet summaries over several pages, but cannot present a detailed Modbus frame and all decoded fields simultaneously. The UI must use concise labels/abbreviations and page switching.
+
+Display selection is TBD until the firmware memory report and practical layout are checked.
+
 ## Milestones
 
 - `M0` — Hardware base — completed baseline
-- `M1` — Modbus RTU Slave — completed and tested
-- `M2` — Modbus RTU Master — excluded from current compact-tester scope
-- `M3` — Bidirectional line testing
-- `M4` — Diagnostics and statistics
-- `M5` — Display
+- `M1` — Modbus RTU Slave on Nano — completed and tested
+- `M2` — Modbus RTU Master — deferred to future MCU revision
+- `M3` — Bidirectional line testing — future full-featured revision
+- `M4` — Diagnostics and statistics — incremental; scope depends on Nano resources
+- `M5` — Display — current Nano development target
 - `M6` — Portable enclosure
-- `M7` — Final tester
+- `M7` — Full-featured CommTester hardware/firmware revision
 
 ## Development method
 
@@ -70,36 +111,39 @@ In particular:
 
 ### CURRENT STATE
 
-M1 is complete. The Modbus Slave has passed the current functional, CRC, and timing test set.
-
-The current target is to retain the tested Slave and measure available SRAM before adding a compact OLED display.
+The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested Slave implementation is retained. Modbus Master source files have been removed from the active sketch directory.
 
 ### COMPLETED
 
-- Compact Arduino Nano tester architecture established.
+- Nano prototype architecture established.
 - Modbus Slave implementation completed.
 - FC01/02/03/04/05/06/15/16 Slave tests passed.
 - CRC acceptance/rejection test passed.
 - Inter-byte gap and t1.5 boundary tests performed.
-- Development rules established in `DEVELOPMENT_RULES.md`.
+- Master removed from the active Nano firmware scope.
+- SERVICE ↔ SLAVE mode cycle retained.
 
 ### DECISIONS
 
-- The compact tester remains based on Arduino Nano / ATmega328P.
-- The external `ModbusADU` library is not modified.
-- Project-specific Modbus functionality is developed in the CommTester codebase where required.
-- Modbus Master is excluded from the current compact tester to preserve resources for the display and user interface.
+- Keep the Nano prototype and its verified Slave implementation.
+- Keep SERVICE with PING/PONG.
+- Defer Modbus Master on Nano; restore it for the future upgraded-MCU revision.
+- Do not modify the external `ModbusADU` library.
+- Evaluate OLED 128×64 first; retain LCD 1602A as a fallback.
+- Do not choose the future MCU until requirements and resource budget are clearer.
 
 ### OPEN QUESTIONS
 
-- Available SRAM after removing Modbus Master.
-- OLED integration using a page-buffered display driver.
-- Final enclosure dimensions.
+- Actual Flash/SRAM usage after removing Master.
+- Remaining SRAM margin for the display and runtime stack.
+- OLED page-buffer integration feasibility.
+- Whether the 1602A layout provides enough usable information for the intended field workflow.
+- Future MCU selection.
 
 ### NEXT STEP
 
-Compile the firmware without Modbus Master and measure memory usage before OLED integration.
+Compile the current Nano firmware and record Flash/global SRAM usage, then run the existing Slave regression tests. Use the measured memory margin to decide whether to proceed with OLED or switch to the 1602A fallback.
 
 ### BLOCKERS
 
-No current blocker for M2 development.
+No confirmed blocker. Compilation, memory measurement and post-removal hardware regression remain to be performed.
