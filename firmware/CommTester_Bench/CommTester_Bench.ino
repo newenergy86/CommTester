@@ -2,6 +2,8 @@
 #include "serial_console.h"
 #include "modbus_slave.h"
 
+#include <string.h>
+
 // ============================================
 // SETUP
 // ============================================
@@ -26,12 +28,12 @@ void setup() {
   // ------------------------------------------
 
   Serial.println();
-  Serial.println("==============================");
-  Serial.println(" CommTester Bench v0.4");
-  Serial.println("==============================");
-  Serial.println("RS-232 : 9600 8N1");
-  Serial.println("Mode   : SERVICE");
-  Serial.println("Hold button > 2 sec to change mode");
+  Serial.println(F("=============================="));
+  Serial.println(F(" CommTester Bench v0.4"));
+  Serial.println(F("=============================="));
+  Serial.println(F("RS-232 : 9600 8N1"));
+  Serial.println(F("Mode   : SERVICE"));
+  Serial.println(F("Hold button > 2 sec to change mode"));
   Serial.println();
 
 }
@@ -73,7 +75,7 @@ void loop() {
 
     if (SerialConsole::available()) {
 
-      String command = SerialConsole::getCommand();
+      const char* command = SerialConsole::getCommand();
 
       Indicators::rx();
 
@@ -82,9 +84,9 @@ void loop() {
       // PING
       // --------------------------------------
 
-      if (command == "PING") {
+      if (strcmp(command, "PING") == 0) {
 
-        SerialConsole::println("PONG");
+        SerialConsole::println(F("PONG"));
 
         Indicators::tx();
         Indicators::beep(1);
@@ -95,12 +97,12 @@ void loop() {
       // HELP
       // --------------------------------------
 
-      else if (command == "HELP") {
+      else if (strcmp(command, "HELP") == 0) {
 
-        SerialConsole::println("Commands:");
-        SerialConsole::println("PING");
-        SerialConsole::println("INFO");
-        SerialConsole::println("MODE");
+        SerialConsole::println(F("Commands:"));
+        SerialConsole::println(F("PING"));
+        SerialConsole::println(F("INFO"));
+        SerialConsole::println(F("MODE"));
 
         Indicators::tx();
       }
@@ -110,10 +112,10 @@ void loop() {
       // INFO
       // --------------------------------------
 
-      else if (command == "INFO") {
+      else if (strcmp(command, "INFO") == 0) {
 
-        SerialConsole::println("CommTester Bench v0.4");
-        SerialConsole::println("RS-232 9600 8N1");
+        SerialConsole::println(F("CommTester Bench v0.4"));
+        SerialConsole::println(F("RS-232 9600 8N1"));
 
         Indicators::tx();
       }
@@ -123,7 +125,7 @@ void loop() {
       // MODE
       // --------------------------------------
 
-      else if (command == "MODE") {
+      else if (strcmp(command, "MODE") == 0) {
 
         IndicatorMode currentMode =
           Indicators::getMode();
@@ -131,12 +133,12 @@ void loop() {
 
         if (currentMode == IND_SERVICE) {
 
-          SerialConsole::println("MODE: SERVICE");
+          SerialConsole::println(F("MODE: SERVICE"));
         }
 
         else if (currentMode == IND_SLAVE) {
 
-          SerialConsole::println("MODE: SLAVE");
+          SerialConsole::println(F("MODE: SLAVE"));
         }
 
         Indicators::tx();
@@ -149,7 +151,7 @@ void loop() {
 
       else {
 
-        SerialConsole::println("Unknown command");
+        SerialConsole::println(F("Unknown command"));
 
         Indicators::error();
         Indicators::beep(2);
@@ -182,22 +184,22 @@ void loop() {
     // DIAGNOSTICS
     // ========================================
 
-    Serial.print("BUTTON EVENT, CURRENT MODE = ");
+    Serial.print(F("BUTTON EVENT, CURRENT MODE = "));
 
 
     if (currentMode == IND_SERVICE) {
 
-      Serial.println("SERVICE");
+      Serial.println(F("SERVICE"));
     }
 
     else if (currentMode == IND_SLAVE) {
 
-      Serial.println("SLAVE");
+      Serial.println(F("SLAVE"));
     }
 
     else {
 
-      Serial.println("UNKNOWN");
+      Serial.println(F("UNKNOWN"));
     }
 
 
@@ -211,7 +213,7 @@ void loop() {
 
         Indicators::setMode(IND_SLAVE);
 
-        Serial.println("MODE -> SLAVE");
+        Serial.println(F("MODE -> SLAVE"));
 
         break;
 
@@ -220,7 +222,7 @@ void loop() {
 
         Indicators::setMode(IND_SERVICE);
 
-        Serial.println("MODE -> SERVICE");
+        Serial.println(F("MODE -> SERVICE"));
 
         break;
     }
