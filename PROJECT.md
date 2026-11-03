@@ -19,7 +19,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - SERVICE: PING/PONG and diagnostic text commands.
 - Modbus: Slave only.
 - Indicators: RX/TX/ERROR/MODE LEDs, buzzer and mode button.
-- Display: not yet selected or integrated.
+- Display: SSD1306 OLED 128×64, U8g2 page-buffer mode `_1_`, hardware I²C (A4/SDA, A5/SCL); status-screen integration added, full-firmware verification pending.
 
 ### Current operating modes
 
@@ -71,14 +71,18 @@ CRC handling has also been tested:
 
 RTU inter-byte timing behavior has been tested with normal frames and deliberate gaps. The exact boundary behavior is recorded in the project log and must not be inferred beyond the performed tests.
 
-## Display options
+## Display
 
-Two small display paths remain under consideration:
+### Selected hardware and driver
 
-- **OLED 128×64:** preferred initial option if it can be integrated with a page-buffered driver and adequate SRAM remains.
-- **LCD 1602A (16×2):** fallback option. It can show essential status and packet summaries over several pages, but cannot present a detailed Modbus frame and all decoded fields simultaneously. The UI must use concise labels/abbreviations and page switching.
+- OLED: SSD1306, 128×64.
+- Library: U8g2 by olikraus, installed through Arduino IDE Library Manager.
+- Constructor: `U8G2_SSD1306_128X64_NONAME_1_HW_I2C` (one-page buffer, `_1_`).
+- Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
+- The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems.
+- A first status screen is integrated in `display.cpp`; it shows the operating mode, RS-232 parameters, Slave ID and button hint. Integration into the complete firmware is awaiting compile and regression verification.
 
-Display selection is TBD until the firmware memory report and practical layout are checked.
+The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
 ## Milestones
 
@@ -87,7 +91,7 @@ Display selection is TBD until the firmware memory report and practical layout a
 - `M2` — Modbus RTU Master — deferred to future MCU revision
 - `M3` — Bidirectional line testing — future full-featured revision
 - `M4` — Diagnostics and statistics — incremental; scope depends on Nano resources
-- `M5` — Display — current Nano development target
+- `M5` — Display — IN PROGRESS
 - `M6` — Portable enclosure
 - `M7` — Full-featured CommTester hardware/firmware revision
 
@@ -129,20 +133,21 @@ The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested
 - Keep SERVICE with PING/PONG.
 - Defer Modbus Master on Nano; restore it for the future upgraded-MCU revision.
 - Do not modify the external `ModbusADU` library.
-- Evaluate OLED 128×64 first; retain LCD 1602A as a fallback.
+- Use SSD1306 OLED 128×64 with U8g2 `_1_` page buffer over hardware I²C; retain LCD 1602A only as a fallback.
 - Do not choose the future MCU until requirements and resource budget are clearer.
 
 ### OPEN QUESTIONS
 
 - Actual Flash/SRAM usage after removing Master.
 - Remaining SRAM margin for the display and runtime stack.
-- OLED page-buffer integration feasibility.
-- Whether the 1602A layout provides enough usable information for the intended field workflow.
+- Integrated OLED build Flash/SRAM usage and runtime stack margin.
+- Hardware regression with the OLED-enabled firmware.
+- Packet-detail screen design after the status-screen integration is verified.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile the current Nano firmware and record Flash/global SRAM usage, then run the existing Slave regression tests. Use the measured memory margin to decide whether to proceed with OLED or switch to the 1602A fallback.
+Compile the OLED-integrated Nano firmware and record Flash/global SRAM usage. Then verify SERVICE and run the existing Modbus Slave regression suite. The OLED integration is not considered complete until these checks pass.
 
 ### BLOCKERS
 
