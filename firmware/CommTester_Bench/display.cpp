@@ -1,70 +1,46 @@
 #include "display.h"
 
-#include <U8g2lib.h>
+#include <U8x8lib.h>
 
-
-// ============================================
-// SSD1306 128x64 OLED
-// Hardware I2C, one-page buffer (128 bytes)
-// Nano: SDA = A4, SCL = A5
-// ============================================
-
-U8G2_SSD1306_128X64_NONAME_1_HW_I2C u8g2(
-  U8G2_R0,
-  U8X8_PIN_NONE
-);
+// SSD1306 128x64, hardware I2C, text-only mode
+U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE);
 
 namespace {
 
   bool displayReady = false;
   IndicatorMode displayedMode = IND_SERVICE;
 
-
   void drawScreen(IndicatorMode mode) {
 
-    u8g2.firstPage();
+    u8x8.clearDisplay();
 
-    do {
+    u8x8.drawString(0, 0, "CommTester v0.4");
 
-      // Outer frame
-      u8g2.drawFrame(0, 0, 128, 64);
+    if (mode == IND_SERVICE) {
+      u8x8.drawString(0, 1, "MODE: SERVICE");
+    }
+    else {
+      u8x8.drawString(0, 1, "MODE: SLAVE");
+    }
 
-      // Header
-      u8g2.setFont(u8g2_font_6x10_tf);
-      u8g2.drawStr(5, 10, "CommTester");
-      u8g2.drawHLine(4, 13, 120);
-
-      // Operating mode
-      if (mode == IND_SERVICE) {
-        u8g2.drawStr(5, 26, "MODE: SERVICE");
-      }
-      else {
-        u8g2.drawStr(5, 26, "MODE: SLAVE");
-      }
-
-      u8g2.drawHLine(4, 30, 120);
-
-      // Serial interface
-      u8g2.drawStr(5, 42, "RS232: 9600 8N1");
-      u8g2.drawStr(5, 53, "SLAVE ID: 1");
-      u8g2.drawStr(5, 62, "HOLD BTN: SWITCH");
-
-    } while (u8g2.nextPage());
+    u8x8.drawString(0, 2, "RS232: 9600");
+    u8x8.drawString(0, 3, "FORMAT: 8N1");
+    u8x8.drawString(0, 4, "SLAVE ID: 1");
+    u8x8.drawString(0, 5, "HOLD BTN: 2s");
   }
 
 }
 
-
 void Display::begin() {
 
-  u8g2.begin();
+  u8x8.begin();
+  u8x8.setFont(u8x8_font_chroma48medium8_r);
 
   displayReady = true;
   displayedMode = IND_SERVICE;
 
   drawScreen(displayedMode);
 }
-
 
 void Display::update(IndicatorMode mode) {
 
