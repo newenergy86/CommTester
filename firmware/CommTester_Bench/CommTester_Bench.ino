@@ -89,7 +89,6 @@ void loop() {
         SerialConsole::println(F("PONG"));
 
         Indicators::tx();
-        Indicators::beep(1);
       }
 
 
