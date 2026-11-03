@@ -568,3 +568,56 @@ The standalone OLED test previously reported 710 bytes of global SRAM and 1,338 
 ### NEXT STEP
 
 Perform a controlled compile-only experiment using U8X8 text mode in a temporary copy of the display module. Compare Flash and global SRAM against the current 21,154-byte / 1,726-byte integrated build. Do not flash until an acceptable memory margin and runtime test plan are established.
+
+---
+
+## CHECKPOINT-31 — U8X8 text-mode compile experiment
+
+### CHANGE
+
+- Performed a temporary, local-only conversion of the display module from U8g2 graphics mode to U8X8 text-only mode.
+- Reused the existing U8g2 library package; no external dependency was changed.
+- The experiment used the SSD1306 128×64 hardware-I²C U8X8 driver and text rendering API.
+- No GitHub firmware source was changed as part of this experiment.
+
+### TEST
+
+The user compiled the complete CommTester sketch for Arduino Nano and reported:
+
+- Flash: 16,576 bytes (53% of 30,720 bytes).
+- Global SRAM: 1,508 bytes (73% of 2,048 bytes).
+- Compiler-reported remaining SRAM: 540 bytes.
+
+Compared with the U8g2 graphics-mode integrated build from CHECKPOINT-30:
+
+- Flash decreased by 4,578 bytes.
+- Global SRAM decreased by 218 bytes.
+- Compiler-reported remaining SRAM increased from 322 to 540 bytes.
+
+Compilation: PASS, user-reported.
+
+Firmware upload and runtime tests: NOT RUN.
+
+### FACTS
+
+- U8X8 text mode compiles in the complete Nano project.
+- The compile-time memory report is materially better than the U8g2 graphics-mode build.
+- The 540-byte remainder is only the compiler-reported space left after global allocations. It does not establish worst-case runtime stack headroom.
+- The verified pre-display SERVICE/SLAVE firmware remains the last accepted runtime baseline.
+- The U8X8 experiment remains local and is not yet an accepted repository firmware change.
+
+### DECISION
+
+- Keep the U8X8 approach as the current display candidate.
+- Do not upload the U8X8 build yet.
+- Before flashing, assess runtime SRAM/stack margin under the most demanding SERVICE and Modbus paths.
+- Do not alter Modbus, SERVICE, or indicator logic for this memory experiment.
+
+### NEXT STEP
+
+Prepare a temporary runtime stack/high-water diagnostic and a bounded test procedure. Use it to assess remaining SRAM under representative and worst-case paths before deciding whether the U8X8 build is safe to flash.
+
+### BLOCKERS
+
+Worst-case runtime stack margin is not yet measured. OLED-enabled SERVICE and Modbus regression tests have not yet been run.
+
