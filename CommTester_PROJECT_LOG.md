@@ -239,3 +239,37 @@ This is recorded as a source-level hypothesis pending a focused test. No indicat
 ### NEXT STEP
 
 Treat the SRAM optimization as successful at compile level. Before further memory changes, perform the Modbus Slave regression and isolate the SERVICE buzzer overlap with a minimal test. Keep the reported 1,148-byte global SRAM usage as the new build baseline.
+
+
+---
+
+## CHECKPOINT-24 — SERVICE PING sound overlap resolved
+
+### CHANGE
+
+- Removed the redundant `Indicators::beep(1)` call from the SERVICE PING handler.
+- PING now relies on the existing RX and TX events in the shared event queue.
+- No changes were made to `indicators.cpp`, `indicators.h`, the event queue, or external libraries.
+
+### FACTS
+
+- The user flashed the updated firmware and confirmed that the PING sound problem is resolved.
+- The change was committed as `30fa7f49ce6ebc62c45e03c34755fbc08ea0c70e`.
+- The updated main sketch was fetched again from GitHub; the redundant beep call is absent from the PING handler.
+
+### TEST
+
+- SERVICE PING sound indication: PASS, according to the user's hardware confirmation.
+- PONG response and RX/TX LED behavior: no regression was reported during the confirmation.
+- Unknown-command indication and mode-switch beep: not separately re-tested in this checkpoint.
+- Full Modbus Slave hardware regression after the SERVICE console SRAM optimization: NOT RUN / NOT CONFIRMED.
+
+### DECISION
+
+- Keep the minimal PING change.
+- Do not refactor the shared indicator state machine; the focused fix resolved the observed problem.
+- Preserve the 1,148-byte global SRAM build report from CHECKPOINT-23 as the current measured memory baseline.
+
+### NEXT STEP
+
+Run the Modbus Slave hardware regression on the current firmware, covering FC01, FC02, FC03, FC04, FC05, FC06, FC15 and FC16, including read-back verification for writes and CRC rejection. Record any deviations before making further code changes.
