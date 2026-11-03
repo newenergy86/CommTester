@@ -80,7 +80,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8G2_SSD1306_128X64_NONAME_1_HW_I2C` (one-page buffer, `_1_`).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems.
-- A first status screen is integrated in `display.cpp`; it shows the operating mode, RS-232 parameters, Slave ID and button hint. Integration into the complete firmware is awaiting compile and regression verification.
+- A first status screen is integrated in `display.cpp`; it shows the operating mode, RS-232 parameters, Slave ID and button hint. The complete U8g2 build compiles but leaves only 322 bytes of SRAM; this is considered insufficient for reliable operation. The current graphics-mode integration is experimental and must not be flashed. A compile-only U8X8 text-mode memory experiment is the next step.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -140,14 +140,14 @@ The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested
 
 - Actual Flash/SRAM usage after removing Master.
 - Remaining SRAM margin for the display and runtime stack.
-- Integrated OLED build Flash/SRAM usage and runtime stack margin.
+- Find an OLED interface mode/driver that leaves adequate SRAM and verify runtime stack margin.
 - Hardware regression with the OLED-enabled firmware.
 - Packet-detail screen design after the status-screen integration is verified.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile the OLED-integrated Nano firmware and record Flash/global SRAM usage. Then verify SERVICE and run the existing Modbus Slave regression suite. The OLED integration is not considered complete until these checks pass.
+Run a compile-only U8X8 text-mode experiment using the existing U8g2 package and compare its SRAM use with the current graphics-mode build. Do not flash until adequate runtime SRAM margin is established.
 
 ### BLOCKERS
 
