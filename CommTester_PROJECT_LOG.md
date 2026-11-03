@@ -644,7 +644,7 @@ Worst-case runtime stack margin is not yet measured. OLED-enabled SERVICE and Mo
 ### TEST
 
 - GitHub source update: PASS.
-- Post-update fetch and content comparison: pending immediate verification.
+- Post-update fetch: PASS; U8X8 constructor is present and the old U8g2 graphics constructor is absent from the current `display.cpp`.
 - Arduino compile after synchronization: NOT RUN in this checkpoint.
 - Full SERVICE/Modbus regression with OLED enabled: NOT RECORDED.
 
@@ -657,4 +657,61 @@ Worst-case runtime stack margin is not yet measured. OLED-enabled SERVICE and Mo
 ### NEXT STEP
 
 Add request/response counters for valid Modbus requests addressed to this Slave and display the agreed statistics on the SLAVE screen. Test with addressed requests, foreign IDs, broadcast and invalid CRC frames.
+
+
+
+---
+
+## CHECKPOINT-33 — Modbus Slave traffic statistics added to OLED source
+
+### CHANGE
+
+- Added 32-bit request and response counters in `modbus_slave.cpp`.
+- Added `ModbusSlave::getStatistics()` to expose the counters without coupling the display module to Modbus internals.
+- A request is counted only after successful RTU reception, CRC validation and a match with `SLAVE_ID=1`.
+- Foreign IDs, Broadcast ID 0, transport errors and invalid-CRC frames are excluded from the statistics. Existing `Indicators::rx()` behavior was not changed.
+- A response is counted only when `writeAdu()` returns true. Normal and Modbus Exception responses use the same transmission path and are counted equally.
+- Updated the OLED API to accept request/response totals. The SLAVE screen now shows REQ, RESP, RATE and MISS; the SERVICE screen remains unchanged.
+- The display caches the last mode and counter values and redraws only when one of them changes.
+- No external library, Modbus function implementation, register map, serial parameter or SERVICE command was changed.
+
+### FACTS
+
+- The current `ModbusRTU::writeAdu()` returns `bool`; its present implementation returns true after transmission.
+- The current Slave processing path prepares exception responses in `ModbusSlaveLogic::processPdu()` and sends them through the same `writeAdu()` call.
+- The statistics are held in `uint32_t` counters. The OLED counter fields are ten digits wide.
+- The percentage calculation currently uses 64-bit intermediate arithmetic to avoid overflow when multiplying long-running 32-bit counters. Its Flash/runtime cost must be checked in the Nano build.
+- The source changes have been fetched back from GitHub and the expected API and display fields are present.
+
+### TEST
+
+- GitHub source updates: PASS.
+- Post-update fetch/source presence checks: PASS.
+- Arduino Nano compilation: NOT RUN.
+- Updated Flash/SRAM report: NOT AVAILABLE.
+- OLED runtime test: NOT RUN.
+- Statistics acceptance test: NOT RUN.
+
+### DECISION
+
+- Keep the statistics implementation as a test candidate, not yet as a verified firmware baseline.
+- Do not flash it until the user compiles the current repository source and the resulting Flash/SRAM report is reviewed.
+- Preserve the current U8X8 SERVICE screen and existing Modbus behavior.
+
+### ACCEPTANCE TEST
+
+After successful compile and memory review:
+
+1. Reset the Nano; enter SLAVE mode. Expected initial display: REQ=0, RESP=0, RATE=--.-%, MISS=0.
+2. Send 10 valid requests to Slave ID 1. Expected: REQ=10, RESP=10, RATE=100.0%, MISS=0.
+3. Send valid requests addressed to another ID, one Broadcast request (ID 0), and one invalid-CRC request. Expected: all four displayed statistics remain unchanged.
+4. Send a valid request to ID 1 that produces a Modbus Exception response. Expected: REQ and RESP both increment by one.
+
+### NEXT STEP
+
+Compile the current GitHub firmware for Arduino Nano. Report compiler errors, Flash usage and global SRAM usage before flashing or running the hardware acceptance test.
+
+### BLOCKERS
+
+Build size and runtime cost of the 64-bit percentage calculation are TBD. No hardware PASS is claimed for the new statistics.
 
