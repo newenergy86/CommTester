@@ -402,3 +402,76 @@ The script reported:
 ### NEXT STEP
 
 M1 Modbus RTU Slave functional regression is complete for the currently defined test scope. Proceed to the next planned project task without changing the verified Slave baseline.
+
+
+---
+
+## CHECKPOINT-28 — Modbus Slave diagnostic strings moved to Flash; post-change regression PASS
+
+### CHANGE
+
+- Replaced fixed diagnostic string literals in `firmware/CommTester_Bench/modbus_slave.cpp` with Arduino `F()` flash-string wrappers.
+- No Modbus processing logic, register/coil maps, transport behavior, external libraries, or protocol parameters were changed.
+- Firmware source commit: `90d47359041d7ca7f2ecb1b8bfd9c115bd6ae41f`.
+
+### MEMORY FACTS
+
+The user compiled the updated firmware for Arduino Nano and reported:
+
+- Flash: 11,116 bytes (36% of 30,720 bytes).
+- Global SRAM: 990 bytes (48% of 2,048 bytes).
+- Compiler-reported remaining SRAM: 1,058 bytes.
+
+Compared with the CHECKPOINT-23 build report (11,032 bytes Flash; 1,148 bytes global SRAM; 900 bytes remaining):
+
+- Global SRAM decreased by a further 158 bytes.
+- Compiler-reported remaining SRAM increased by 158 bytes.
+- Flash usage increased by 84 bytes.
+
+Compared with the pre-CHECKPOINT-23 report (1,398 bytes global SRAM), the current build uses 408 fewer bytes of global SRAM. The compiler-reported remaining SRAM is not a measurement of worst-case runtime stack margin.
+
+### TEST
+
+The user confirmed SERVICE operation after the update.
+
+After resetting the Nano to restore the initial test maps, the user ran:
+
+- `tests/modbus_test_all.py`: OVERALL RESULT PASS.
+  - FC01 — Read Coils: PASS
+  - FC02 — Read Discrete Inputs: PASS
+  - FC03 — Read Holding Registers at addresses 0 and 120: PASS
+  - FC04 — Read Input Registers at addresses 0 and 120: PASS
+  - FC05 — Write Single Coil and read-back: PASS
+  - FC06 — Write Single Holding Register and read-back: PASS
+  - FC15 — Write Multiple Coils and read-back: PASS
+  - FC16 — Write Multiple Holding Registers and read-back: PASS
+- `tests/modbus_test_crc.py`: OVERALL RESULT PASS.
+  - Valid FC03 request before invalid-CRC frame: PASS
+  - Invalid-CRC request rejected with no response: PASS
+  - Subsequent valid FC03 request processed successfully: PASS
+  - Register data unchanged across invalid-CRC request: PASS
+
+The first complete-function run before resetting the Nano reported mismatches in FC01 and FC03 because the RAM maps retained values written by earlier tests (FC15 changed the coils; FC06 changed Holding Register 0). After reset, initial values were restored and the complete suite passed. This was test-state persistence, not a firmware regression.
+
+### FACTS
+
+- The post-optimization build compiles successfully.
+- SERVICE operation was confirmed by the user.
+- All eight implemented Slave function codes passed the complete hardware regression after reset.
+- The dedicated invalid-CRC rejection and recovery test passed.
+- No protocol or functional code changes were needed.
+
+### DECISION
+
+- Retain this firmware as the current verified Nano SERVICE/SLAVE baseline.
+- Do not perform further speculative optimization or alter the working Modbus implementation.
+- Evaluate the OLED integration using a page-buffered driver and measure the complete build's SRAM usage and runtime margin.
+
+### LIMITATIONS
+
+- The reported 1,058 bytes is the compiler's remaining SRAM after global allocations; actual stack headroom under worst-case runtime conditions has not yet been measured.
+- OLED integration and regression with the display enabled have not yet been performed.
+
+### NEXT STEP
+
+Begin the OLED integration feasibility step: identify a suitable page-buffered SSD1306 driver and determine its actual SRAM footprint before integrating it into the firmware.
