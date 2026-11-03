@@ -10,10 +10,10 @@ namespace SerialConsole {
   void update();
 
   bool available();
-  String getCommand();
+  const char* getCommand();
 
-  void print(const String &text);
-  void println(const String &text);
+  void print(const __FlashStringHelper *text);
+  void println(const __FlashStringHelper *text);
 
   bool rs232Available();
   byte rs232Read();
