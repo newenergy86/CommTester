@@ -19,7 +19,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - SERVICE: PING/PONG and diagnostic text commands.
 - Modbus: Slave only.
 - Indicators: RX/TX/ERROR/MODE LEDs, buzzer and mode button.
-- Display: SSD1306 OLED 128×64, U8g2 page-buffer mode `_1_`, hardware I²C (A4/SDA, A5/SCL); status-screen integration added, full-firmware verification pending.
+- Display: SSD1306 OLED 128×64, currently evaluating U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL); compile-only experiment passed, runtime stack margin and hardware regression remain pending.
 
 ### Current operating modes
 
@@ -80,7 +80,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8G2_SSD1306_128X64_NONAME_1_HW_I2C` (one-page buffer, `_1_`).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems.
-- A first status screen is integrated in `display.cpp`; it shows the operating mode, RS-232 parameters, Slave ID and button hint. The complete U8g2 build compiles but leaves only 322 bytes of SRAM; this is considered insufficient for reliable operation. The current graphics-mode integration is experimental and must not be flashed. A compile-only U8X8 text-mode memory experiment is the next step.
+- A first status screen is integrated in `display.cpp`; it shows the operating mode, RS-232 parameters, Slave ID and button hint. The complete U8g2 graphics-mode build left only 322 bytes of SRAM and must not be flashed. A temporary U8X8 text-mode compile experiment passed with 1,508 bytes global SRAM and 540 bytes compiler-reported remaining. This is an improvement, but runtime stack headroom is not yet measured; do not flash until that assessment is complete.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -140,14 +140,14 @@ The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested
 
 - Actual Flash/SRAM usage after removing Master.
 - Remaining SRAM margin for the display and runtime stack.
-- Find an OLED interface mode/driver that leaves adequate SRAM and verify runtime stack margin.
+- Measure runtime stack margin for the U8X8 text-mode candidate under representative and worst-case paths.
 - Hardware regression with the OLED-enabled firmware.
 - Packet-detail screen design after the status-screen integration is verified.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Run a compile-only U8X8 text-mode experiment using the existing U8g2 package and compare its SRAM use with the current graphics-mode build. Do not flash until adequate runtime SRAM margin is established.
+Prepare and run a temporary runtime stack/high-water diagnostic for the U8X8 candidate. Do not flash until adequate runtime SRAM margin is established.
 
 ### BLOCKERS
 
