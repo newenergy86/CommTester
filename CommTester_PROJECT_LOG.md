@@ -348,3 +348,57 @@ Read-back values matched the expected values for all tested write operations. Re
 ### NEXT STEP
 
 Run the dedicated invalid-CRC test and verify that the Slave rejects the malformed request without responding, then confirm that a subsequent valid request is processed normally.
+
+
+---
+
+## CHECKPOINT-27 — Invalid CRC rejection and Slave recovery
+
+### TEST
+
+The user ran the updated `tests/modbus_test_crc.py` against the current CommTester firmware.
+
+Test configuration:
+- Serial port: COM7
+- Baud rate: 9600
+- Format: 8N1
+- Slave ID: 1
+
+All three test stages passed:
+
+1. Valid FC03 request before the malformed frame: PASS.
+   - Slave returned a structurally valid FC03 response.
+   - Response CRC was valid.
+   - Holding register values returned were [12345, 200, 300]. The first register retained the value written by the preceding FC06 function test; the test intentionally does not assume factory-initialized register contents.
+2. FC03 request with deliberately corrupted CRC: PASS.
+   - Slave returned no data.
+3. Valid FC03 request after the malformed frame: PASS.
+   - Slave returned a structurally valid FC03 response with valid CRC.
+   - Response data before and after the invalid-CRC request was unchanged.
+
+The script reported:
+- Valid request before error: PASS
+- Invalid CRC rejected: PASS
+- Valid request after error: PASS
+- OVERALL RESULT: PASS
+
+### FACTS
+
+- The current hardware test confirms rejection of the tested invalid-CRC request without a response.
+- A subsequent valid request is processed successfully.
+- The FC03 response payload remained unchanged across the invalid-CRC request.
+- No firmware changes were required for this test.
+
+### DECISION
+
+- Keep the current Modbus Slave firmware as the verified functional baseline.
+- Do not modify firmware in response to the earlier apparent FAIL: it was caused by a stale/local test-script version with an incorrect fixed expectation for Holding Register 0.
+- The corrected test compares the valid response before and after the malformed frame and validates response structure and CRC.
+
+### LIMITATIONS
+
+- This checkpoint covers the tested invalid-CRC FC03 request and immediate valid-request recovery. It is not an exhaustive test of every malformed-frame type or every possible RTU timing boundary.
+
+### NEXT STEP
+
+M1 Modbus RTU Slave functional regression is complete for the currently defined test scope. Proceed to the next planned project task without changing the verified Slave baseline.
