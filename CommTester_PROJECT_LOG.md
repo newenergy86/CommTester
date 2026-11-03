@@ -273,3 +273,27 @@ Treat the SRAM optimization as successful at compile level. Before further memor
 ### NEXT STEP
 
 Run the Modbus Slave hardware regression on the current firmware, covering FC01, FC02, FC03, FC04, FC05, FC06, FC15 and FC16, including read-back verification for writes and CRC rejection. Record any deviations before making further code changes.
+
+
+---
+
+## CHECKPOINT-25 — Modbus Slave read-function regression
+
+### TEST
+
+The user reports successful hardware tests of all four read functions on the current firmware:
+
+- FC01 — Read Coils: PASS
+- FC02 — Read Discrete Inputs: PASS
+- FC03 — Read Holding Registers: PASS
+- FC04 — Read Input Registers: PASS
+
+The tests were performed using QModMaster with the CommTester operating as Slave. The test parameters were Slave ID 1, 9600 baud, 8N1, and zero-based start address 0. The user confirmed that all four tables work.
+
+### SCOPE
+
+This confirms the four read paths on the current firmware after the SERVICE console SRAM optimization and PING sound fix. It does not yet confirm write functions, invalid-CRC rejection on the current firmware, or the complete regression suite.
+
+### NEXT STEP
+
+Test write functions FC05, FC06, FC15 and FC16, then read back the written values. After that, test invalid CRC rejection and recovery.
