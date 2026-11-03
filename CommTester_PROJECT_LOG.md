@@ -621,3 +621,40 @@ Prepare a temporary runtime stack/high-water diagnostic and a bounded test proce
 
 Worst-case runtime stack margin is not yet measured. OLED-enabled SERVICE and Modbus regression tests have not yet been run.
 
+
+
+---
+
+## CHECKPOINT-32 — U8X8 display source synchronized with the flashed firmware
+
+### CHANGE
+
+- Replaced the stale U8g2 graphics-mode implementation in `firmware/CommTester_Bench/display.cpp` with the user's uploaded U8X8 text-mode implementation.
+- Kept the existing U8g2 package; no external library was changed.
+- Updated `PROJECT.md` to distinguish the user's runtime observation from a fully documented regression result.
+
+### FACTS
+
+- The user confirmed that the U8X8 implementation is the version flashed to the Nano.
+- The user reports that the device currently operates without visible failures.
+- The user's reported build figures remain: Flash 16,576 bytes; global SRAM 1,508 bytes; compiler-reported remaining SRAM 540 bytes.
+- The 540-byte compiler remainder is not a worst-case runtime stack measurement.
+- The previous GitHub `display.cpp` was still the U8g2 graphics-mode version; this checkpoint synchronizes it to the uploaded U8X8 source.
+
+### TEST
+
+- GitHub source update: PASS.
+- Post-update fetch and content comparison: pending immediate verification.
+- Arduino compile after synchronization: NOT RUN in this checkpoint.
+- Full SERVICE/Modbus regression with OLED enabled: NOT RECORDED.
+
+### DECISION
+
+- Treat U8X8 text mode as the current display implementation candidate and preserve it.
+- Do not revisit stack-watermark diagnostics as a prerequisite to the next practical task.
+- Preserve the existing SERVICE screen and Modbus behavior while implementing the agreed Slave traffic statistics.
+
+### NEXT STEP
+
+Add request/response counters for valid Modbus requests addressed to this Slave and display the agreed statistics on the SLAVE screen. Test with addressed requests, foreign IDs, broadcast and invalid CRC frames.
+
