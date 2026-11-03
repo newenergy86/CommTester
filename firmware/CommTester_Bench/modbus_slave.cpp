@@ -22,6 +22,14 @@ namespace ModbusSlave {
 
 
   // ------------------------------------------
+  // TRAFFIC STATISTICS
+  // ------------------------------------------
+
+  uint32_t requestCount = 0;
+  uint32_t responseCount = 0;
+
+
+  // ------------------------------------------
   // MODBUS DATA SIZES
   // ------------------------------------------
   //
@@ -76,6 +84,9 @@ namespace ModbusSlave {
 
   void begin() {
 
+    requestCount = 0;
+    responseCount = 0;
+
     // ----------------------------------------
     // TEST HOLDING REGISTERS
     // ----------------------------------------
@@ -96,7 +107,7 @@ namespace ModbusSlave {
     //
     // bit 0 = coil 0
     // bit 1 = coil 1
-    // ...
+    // ... 
     // bit 7 = coil 7
     //
     // 0xAA = 10101010
@@ -206,15 +217,6 @@ namespace ModbusSlave {
     // ----------------------------------------
     // CONFIGURE COILS
     // ----------------------------------------
-    //
-    // The library receives:
-    //
-    //   pointer to packed byte array
-    //   number of logical coils
-    //
-    // The second parameter is therefore 125,
-    // not 16 bytes.
-    // ----------------------------------------
 
     modbusLogic.configureCoils(
       coils,
@@ -250,6 +252,16 @@ namespace ModbusSlave {
       MODBUS_BAUD,
       SERIAL_8N1
     );
+  }
+
+
+  // ==========================================
+  // STATISTICS
+  // ==========================================
+
+  void getStatistics(uint32_t &requests, uint32_t &responses) {
+    requests = requestCount;
+    responses = responseCount;
   }
 
 
@@ -387,6 +399,10 @@ namespace ModbusSlave {
       return;
     }
 
+    // Count only valid requests addressed to this Slave.
+    // Broadcast (ID 0), foreign IDs and bad CRC frames are excluded.
+    requestCount++;
+
 
     // ----------------------------------------
     // PROCESS REQUEST
@@ -462,11 +478,20 @@ namespace ModbusSlave {
 
     Serial.println(F("TRANSMITTING"));
 
-    modbusComm->writeAdu(adu);
+    if (modbusComm->writeAdu(adu)) {
 
-    Serial.println(F("RESPONSE SENT"));
+      responseCount++;
 
-    Indicators::tx();
+      Serial.println(F("RESPONSE SENT"));
+
+      Indicators::tx();
+    }
+    else {
+
+      Serial.println(F("RESPONSE FAILED"));
+
+      Indicators::error();
+    }
   }
 
 }
