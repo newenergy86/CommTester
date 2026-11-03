@@ -288,28 +288,28 @@ namespace ModbusSlave {
     // ----------------------------------------
 
     Serial.println();
-    Serial.println("FRAME RECEIVED");
+    Serial.println(F("FRAME RECEIVED"));
 
 
-    Serial.print("Length: ");
+    Serial.print(F("Length: "));
     Serial.println(adu.getRtuLen());
 
 
-    Serial.print("ID: ");
+    Serial.print(F("ID: "));
     Serial.println(adu.getUnitId());
 
 
-    Serial.print("Function: ");
+    Serial.print(F("Function: "));
     Serial.println(adu.getFunctionCode());
 
 
-    Serial.print("CRC: ");
+    Serial.print(F("CRC: "));
 
     if (adu.crcGood()) {
-      Serial.println("OK");
+      Serial.println(F("OK"));
     }
     else {
-      Serial.println("BAD");
+      Serial.println(F("BAD"));
     }
 
 
@@ -319,14 +319,14 @@ namespace ModbusSlave {
 
     if (adu.getRtuLen() > 0) {
 
-      Serial.print("RAW: ");
+      Serial.print(F("RAW: "));
 
       for (uint16_t i = 0;
            i < adu.getRtuLen();
            i++) {
 
         if (adu.rtu[i] < 0x10) {
-          Serial.print("0");
+          Serial.print(F("0"));
         }
 
         Serial.print(
@@ -334,7 +334,7 @@ namespace ModbusSlave {
           HEX
         );
 
-        Serial.print(" ");
+        Serial.print(F(" "));
       }
 
       Serial.println();
@@ -347,11 +347,11 @@ namespace ModbusSlave {
 
     if (error != MODBUS_RTU_SUCCESS) {
 
-      Serial.print("ERROR CODE: ");
+      Serial.print(F("ERROR CODE: "));
       Serial.println(error);
 
-      Serial.print("CRC CHECK: ");
-      Serial.println(adu.crcGood() ? "OK" : "BAD");
+      Serial.print(F("CRC CHECK: "));
+      Serial.println(adu.crcGood() ? F("OK") : F("BAD"));
 
       Indicators::error();
 
@@ -365,7 +365,7 @@ namespace ModbusSlave {
 
     if (!adu.crcGood()) {
 
-      Serial.println("CRC ERROR");
+      Serial.println(F("CRC ERROR"));
 
       Indicators::error();
 
@@ -382,7 +382,7 @@ namespace ModbusSlave {
 
     if (adu.getUnitId() != SLAVE_ID) {
 
-      Serial.println("FOREIGN SLAVE ID");
+      Serial.println(F("FOREIGN SLAVE ID"));
 
       return;
     }
@@ -403,28 +403,28 @@ namespace ModbusSlave {
 
     adu.updateCrc();
 
-    Serial.println("RESPONSE PREPARED");
+    Serial.println(F("RESPONSE PREPARED"));
 
 
-    Serial.print("Length: ");
+    Serial.print(F("Length: "));
     Serial.println(adu.getRtuLen());
 
 
-    Serial.print("ID: ");
+    Serial.print(F("ID: "));
     Serial.println(adu.getUnitId());
 
 
-    Serial.print("Function: ");
+    Serial.print(F("Function: "));
     Serial.println(adu.getFunctionCode());
 
 
-    Serial.print("CRC: ");
+    Serial.print(F("CRC: "));
 
     if (adu.crcGood()) {
-      Serial.println("OK");
+      Serial.println(F("OK"));
     }
     else {
-      Serial.println("BAD");
+      Serial.println(F("BAD"));
     }
 
 
@@ -434,14 +434,14 @@ namespace ModbusSlave {
 
     if (adu.getRtuLen() > 0) {
 
-      Serial.print("RAW: ");
+      Serial.print(F("RAW: "));
 
       for (uint16_t i = 0;
            i < adu.getRtuLen();
            i++) {
 
         if (adu.rtu[i] < 0x10) {
-          Serial.print("0");
+          Serial.print(F("0"));
         }
 
         Serial.print(
@@ -449,7 +449,7 @@ namespace ModbusSlave {
           HEX
         );
 
-        Serial.print(" ");
+        Serial.print(F(" "));
       }
 
       Serial.println();
@@ -460,11 +460,11 @@ namespace ModbusSlave {
     // TRANSMIT RESPONSE
     // ----------------------------------------
 
-    Serial.println("TRANSMITTING");
+    Serial.println(F("TRANSMITTING"));
 
     modbusComm->writeAdu(adu);
 
-    Serial.println("RESPONSE SENT");
+    Serial.println(F("RESPONSE SENT"));
 
     Indicators::tx();
   }
