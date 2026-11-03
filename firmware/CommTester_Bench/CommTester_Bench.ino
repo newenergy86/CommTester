@@ -61,7 +61,12 @@ void loop() {
 
   IndicatorMode mode = Indicators::getMode();
 
-  Display::update(mode);
+  uint32_t requests = 0;
+  uint32_t responses = 0;
+
+  ModbusSlave::getStatistics(requests, responses);
+
+  Display::update(mode, requests, responses);
 
 
   // ------------------------------------------
