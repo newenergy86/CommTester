@@ -7,6 +7,7 @@ namespace ModbusSlave {
 
   void begin();
   void update();
+  void getStatistics(uint32_t &requests, uint32_t &responses);
 
 }
 
