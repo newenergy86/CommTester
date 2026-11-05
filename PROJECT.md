@@ -137,12 +137,11 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 
 ### OPEN QUESTIONS
 
-- Actual Flash/SRAM usage after removing Master.
-- Remaining SRAM margin for the display and runtime stack.
-- Record a complete functional regression with the OLED-enabled U8X8 firmware.
-- Worst-case runtime stack margin for the U8X8 firmware remains unmeasured.
-- Compile and run the updated OLED screen test, including display of foreign IDs and function codes.
-- Run the statistics acceptance test on hardware, including Broadcast and invalid CRC.
+- Actual Flash/SRAM usage after SERVICE removal.
+- Compile the current SERVICE-free source and compare its memory report with the prior 17,706-byte Flash / 1,568-byte SRAM report (toolchain and library versions must match).
+- Verify the Slave-only OLED screen on hardware.
+- Run the full Modbus Slave regression after SERVICE removal, including all eight function codes and invalid-CRC rejection/recovery.
+- Encoder hardware and input handling are not implemented yet.
 - Future MCU selection.
 
 ### NEXT STEP
@@ -151,4 +150,4 @@ Compile the SERVICE-free Nano firmware and record Flash/SRAM usage. If compilati
 
 ### BLOCKERS
 
-Updated OLED layout/API compilation and hardware verification are pending. The previously compiled statistics build is not the same as this new display build.
+The SERVICE-free source has not yet been compiled or tested on hardware. The next gate is compile and memory measurement, followed by OLED and Modbus regression.
