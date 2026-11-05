@@ -833,3 +833,60 @@ Compile the updated firmware for Arduino Nano and report Flash/SRAM usage. If co
 ### BLOCKERS
 
 Compilation and hardware rendering remain unverified.
+
+
+---
+
+## CHECKPOINT-37 — SERVICE removed from active Nano firmware (verification pending)
+
+### CHANGE
+
+- Removed SERVICE command processing (PING/PONG, HELP, INFO and MODE) from the main sketch.
+- Removed SERVICE/SLAVE mode switching; the Nano now starts directly in Modbus Slave mode.
+- Removed the SERVICE screen from the OLED module. The existing Slave status layout and its fields are retained.
+- Removed mode-state, mode-LED, old button polling and standalone mode-beep logic from the Indicators module. RX/TX/ERROR event indication remains.
+- Extracted the RS-232 SoftwareSerial instance and initialization into the project-owned `rs232_port.h/.cpp` module.
+- Updated Modbus Slave to obtain its SoftwareSerial stream from `RS232Port::getSerial()`.
+- Removed the obsolete `serial_console.h/.cpp` files and their command parser/buffer.
+- USB Serial diagnostics in the Modbus Slave implementation were intentionally retained.
+- No Modbus function-code processing, register maps, CRC logic, traffic-counter semantics, RTU transport implementation, or external library was intentionally changed.
+
+### FACTS
+
+- The active main sketch no longer references SERVICE, `IndicatorMode`, mode switching, or the console parser.
+- The Modbus Slave still receives a `SoftwareSerial` stream on D10/D11, initialized at 9600 baud.
+- The display API now receives Slave status data directly, without an operating-mode argument.
+- D7 is no longer polled by the Indicators module; it is reserved for the planned encoder button.
+- The former mode LED output is no longer used by firmware.
+
+### DECISIONS
+
+- The Nano prototype operates only as Modbus Slave.
+- SERVICE remains a possible feature of the future, more capable MCU revision; it is removed only from the active Nano firmware.
+- Keep the RS-232 transport as a separate project-owned module. Do not reintroduce command parsing into it.
+
+### TEST
+
+- GitHub source edits: committed.
+- Post-edit fetch/source review: pending final verification.
+- Arduino Nano compilation: NOT RUN.
+- Flash/SRAM measurement: NOT AVAILABLE.
+- OLED runtime test: NOT RUN.
+- Modbus hardware regression (FC01/02/03/04/05/06/15/16 and CRC rejection/recovery): NOT RUN after this change.
+
+### ACCEPTANCE CRITERIA
+
+1. Arduino Nano build compiles without errors.
+2. Compiler Flash and global SRAM figures are recorded and compared with the previous 17,706-byte Flash / 1,568-byte SRAM report (same local toolchain and library versions required for a valid comparison).
+3. On reset, the device starts directly in Slave mode and the OLED displays the Slave status screen.
+4. All eight existing Modbus function-code tests pass.
+5. Invalid CRC is rejected without a response, and a subsequent valid request is processed normally.
+6. RX/TX/ERROR indication remains operational.
+
+### NEXT STEP
+
+Fetch and inspect all changed GitHub files for stale SERVICE/console references and API consistency. Then compile the current repository revision for Arduino Nano. Do not proceed to encoder implementation until compile and baseline hardware regression are accepted.
+
+### BLOCKERS
+
+No user-reported compile or hardware result is available for this checkpoint. The new source is a candidate revision, not yet a verified firmware baseline.
