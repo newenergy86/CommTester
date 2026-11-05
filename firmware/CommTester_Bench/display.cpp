@@ -324,7 +324,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     (functionCode != displayedFunctionCode);
   const bool countersChanged =
     (rx != displayedRx) || (tx != displayedTx) ||
-    (errors != displayedErrors);
+    (errors != displayedErrors) || (missed != missedCache);
 
   // Keep the cached data current while the physical display is asleep.
   if (displaySleeping) {
@@ -334,6 +334,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     displayedRx = rx;
     displayedTx = tx;
     displayedErrors = errors;
+    missedCache = missed;
     return;
   }
 
@@ -348,7 +349,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   if (countersChanged) {
     drawTraffic(rx, tx);
     drawRate(rx, tx);
-    drawErrors(errors);
+    drawErrorMissed(errors, missed);
   }
 
   displayedSlaveId = slaveId;
@@ -357,6 +358,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   displayedRx = rx;
   displayedTx = tx;
   displayedErrors = errors;
+  missedCache = missed;
 
   if (millis() - lastActivityTime >= DISPLAY_SLEEP_TIMEOUT) {
     u8x8.setPowerSave(1);
