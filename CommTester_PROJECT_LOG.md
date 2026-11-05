@@ -1139,3 +1139,7 @@ Compile and upload the latest revision. Verify initial ERR=0/MISS=0, RATE=57.1% 
 ### BLOCKERS
 
 No compile or hardware PASS is claimed for this checkpoint. The test-05 assertion remains unverified because the script is not in GitHub.
+
+### PROTOCOL NOTE
+
+The Modbus Application Protocol specification defines exception 03 (Illegal Data Value) for faults in request-data structure, including an incorrect implied length. The current Nano firmware deliberately discards a short fixed-length request without a response after detecting the malformed length. This is a project behavior choice, not a claim that silence is mandated by the specification. Whether to send exception 03 instead is TBD and should be decided after reviewing the test script and confirming the desired CommTester diagnostic behavior.
