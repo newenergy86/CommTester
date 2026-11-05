@@ -19,7 +19,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
 - Indicators: RX/TX/ERROR LEDs and buzzer. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
-- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. Compilation and hardware regression after SERVICE removal are pending.
+- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module now redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization. Compilation and OLED hardware verification of this incremental-refresh change are pending.
 
 ### Current operating mode
 
@@ -114,7 +114,7 @@ In particular:
 
 ### CURRENT STATE
 
-The Nano firmware source has been simplified to a single Modbus SLAVE operating mode. SERVICE command handling and mode switching have been removed. The Modbus Slave processing implementation is retained; its RS-232 dependency has been separated into `rs232_port`. The SERVICE-free firmware compiles successfully for Arduino Nano / ATmega328P: Flash 16,962 bytes (55%), global SRAM 1,592 bytes (77%), leaving 456 bytes.
+The Nano firmware source has been simplified to a single Modbus SLAVE operating mode. SERVICE command handling and mode switching have been removed. The Modbus Slave processing implementation is retained; its RS-232 dependency has been separated into `rs232_port`. The SERVICE-free firmware compiles successfully for Arduino Nano / ATmega328P: Flash 16,962 bytes (55%), global SRAM 1,592 bytes (77%), leaving 456 bytes. The reported Modbus function regression passed for FC01/02/03/04/05/06/15/16. An incremental OLED row-refresh change is now committed; its compile and hardware verification are pending.
 
 ### COMPLETED
 
@@ -126,6 +126,8 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 - Master removed from the active Nano firmware scope.
 - SERVICE mode and its command parser removed from the active Nano firmware; direct Slave startup implemented in source.
 - SERVICE-free Nano firmware compilation passed; Flash/SRAM usage recorded in CHECKPOINT-38.
+- Complete reported Modbus function regression passed after SERVICE removal; see CHECKPOINT-39.
+- Incremental OLED row refresh implemented in source; compile/hardware verification pending in CHECKPOINT-40.
 
 ### DECISIONS
 
@@ -139,15 +141,16 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 ### OPEN QUESTIONS
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
-- Verify the Slave-only OLED screen on hardware.
-- Run the full Modbus Slave regression after SERVICE removal, including all eight function codes and invalid-CRC rejection/recovery.
+- Compile and verify the incremental OLED row-refresh change on hardware; confirm that routine updates do not clear the full screen.
+- Run `modbus_test_all.py` again after the display-only change.
+- Deliberate invalid-CRC rejection/recovery and RX/TX/ERROR indicator verification after SERVICE removal remain to be confirmed.
 - Encoder hardware and input handling are not implemented yet.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Upload the compiled SERVICE-free Nano firmware and verify direct Slave startup, OLED status display, the existing Modbus regression suite, and RX/TX/ERROR indication. Only after this hardware baseline is accepted, implement encoder input and runtime settings.
+Compile and upload the incremental OLED-refresh revision. Verify flicker reduction and row correctness, then rerun the Modbus function regression. Confirm invalid-CRC recovery and RX/TX/ERROR indication before implementing encoder input and runtime settings.
 
 ### BLOCKERS
 
-Compilation and memory measurement passed. Hardware acceptance remains pending: direct Slave startup, OLED rendering, Modbus regression and RX/TX/ERROR indication. SRAM headroom is 456 bytes, so stack usage must be considered before adding features.
+SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The latest incremental OLED-refresh source change still needs compilation and hardware verification. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. SRAM headroom is 456 bytes, so stack usage must be considered before adding features.
