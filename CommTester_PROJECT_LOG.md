@@ -890,3 +890,31 @@ Fetch and inspect all changed GitHub files for stale SERVICE/console references 
 ### BLOCKERS
 
 No user-reported compile or hardware result is available for this checkpoint. The new source is a candidate revision, not yet a verified firmware baseline.
+
+## CHECKPOINT-38 — SERVICE-free Nano firmware compilation PASS
+
+### FACT
+
+- The user compiled the current SERVICE-free firmware for Arduino Nano / ATmega328P successfully; no compiler errors were reported.
+- Flash usage: **16,962 bytes (55% of 30,720 bytes)**.
+- Global SRAM usage: **1,592 bytes (77% of 2,048 bytes)**.
+- Remaining SRAM: **456 bytes** for stack and local variables.
+- Compared with the previous recorded build (17,706 bytes Flash / 1,568 bytes global SRAM): Flash decreased by 744 bytes; global SRAM increased by 24 bytes.
+- The comparison is directly meaningful only if the Arduino core, compiler, board settings and library versions were unchanged.
+
+### TEST
+
+- SERVICE-free source compilation: **PASS** (user-reported).
+- Flash/SRAM measurement: **RECORDED**.
+- Upload to Nano: NOT YET REPORTED.
+- Direct Slave startup and OLED runtime check: NOT YET REPORTED.
+- Modbus regression after SERVICE removal (FC01/02/03/04/05/06/15/16, invalid CRC rejection and valid-frame recovery): NOT YET REPORTED.
+- RX/TX/ERROR indicator check: NOT YET REPORTED.
+
+### NEXT STEP
+
+Upload this exact GitHub revision to the Nano. Verify direct Slave startup and the OLED status screen, then run the existing Modbus regression and indicator checks. Do not begin encoder implementation until these hardware acceptance checks pass.
+
+### BLOCKERS
+
+Compilation is no longer a blocker. Hardware acceptance of the SERVICE-free baseline remains pending. SRAM headroom is 456 bytes; monitor stack usage during runtime testing before adding features.
