@@ -9,7 +9,8 @@ namespace ModbusSlave {
   void update();
   void getDisplayData(uint8_t &slaveId, uint8_t &lastRequestId,
                       uint8_t &lastFunctionCode,
-                      uint32_t &requests, uint32_t &responses);
+                      uint32_t &rx, uint32_t &tx,
+                      uint32_t &errors);
 
 }
 
