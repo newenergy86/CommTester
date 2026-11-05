@@ -35,7 +35,7 @@ namespace ModbusSlave {
   // Validate the RTU length before the PDU handler accesses fields.
   // Fixed-size requests (FC01-06) are exactly 8 bytes including CRC.
   // FC15/16 carry a byte-count field at offset 6.
-  bool hasValidRequestLength(const ModbusADU &adu) {
+  bool hasValidRequestLength(ModbusADU &adu) {
     const uint16_t length = adu.getRtuLen();
 
     if (length < 4) {
