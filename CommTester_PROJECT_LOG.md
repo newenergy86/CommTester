@@ -807,3 +807,29 @@ Compile the current GitHub firmware for Arduino Nano and report Flash/SRAM figur
 ### BLOCKERS
 
 The new layout/API has not yet been compiled or tested on hardware. No hardware PASS is claimed.
+
+## CHECKPOINT-36 — Slave and Master addresses combined on one OLED row
+
+### CHANGE
+
+- Shortened the address labels to `SLV` and `MST`.
+- Combined both addresses on one row: `SLV:01 MST:01`.
+- Kept the initial unknown destination as `MST:--`.
+- Address formatting supports both two-digit and three-digit values within the 16-column OLED width.
+- No Modbus processing, counters, serial settings, external libraries or SERVICE screen behavior changed.
+
+### TEST
+
+- GitHub source fetched before editing: PASS.
+- Display source update: committed.
+- Project documentation update: committed.
+- Post-update fetch verification: pending.
+- Arduino Nano compilation and OLED hardware test: NOT RUN.
+
+### NEXT STEP
+
+Compile the updated firmware for Arduino Nano and report Flash/SRAM usage. If compilation passes, verify that both IDs appear on one line and that three-digit destination IDs do not overwrite adjacent text.
+
+### BLOCKERS
+
+Compilation and hardware rendering remain unverified.
