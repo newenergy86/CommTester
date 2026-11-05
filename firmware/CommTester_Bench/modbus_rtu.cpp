@@ -313,9 +313,17 @@ ModbusRTUError ModbusRTU::readAdu(ModbusADU& adu)
   // ----------------------------------------------------------
 
   if (_serial.available()) {
+    // Preserve the bytes already received for diagnostics.
+    return MODBUS_RTU_FRAME_ERROR;
+  }
 
-    adu.setRtuLen(0);
 
+  // ----------------------------------------------------------
+  // Короткий RTU-кадр не может содержать адрес, функцию и CRC.
+  // Не вызываем crcGood() для длины меньше четырёх байт.
+  // ----------------------------------------------------------
+
+  if (len < 4) {
     return MODBUS_RTU_FRAME_ERROR;
   }
 
@@ -325,9 +333,7 @@ ModbusRTUError ModbusRTU::readAdu(ModbusADU& adu)
   // ----------------------------------------------------------
 
   if (!adu.crcGood()) {
-
-    adu.setRtuLen(0);
-
+    // Preserve the received frame length for RX/error diagnostics.
     return MODBUS_RTU_CRC_ERROR;
   }
 
