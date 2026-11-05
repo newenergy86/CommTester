@@ -29,6 +29,7 @@ namespace ModbusSlave {
   uint32_t rxCount = 0;
   uint32_t txCount = 0;
   uint32_t errorCount = 0;
+  uint32_t missedCount = 0;
   uint8_t lastRequestId = 0xFF;
   uint8_t lastFunctionCode = 0;
 
@@ -123,6 +124,7 @@ namespace ModbusSlave {
     rxCount = 0;
     txCount = 0;
     errorCount = 0;
+    missedCount = 0;
     lastRequestId = 0xFF;
     lastFunctionCode = 0;
 
@@ -301,13 +303,14 @@ namespace ModbusSlave {
   void getDisplayData(uint8_t &slaveId, uint8_t &requestId,
                       uint8_t &functionCode,
                       uint32_t &rx, uint32_t &tx,
-                      uint32_t &errors) {
+                      uint32_t &errors, uint32_t &missed) {
     slaveId = SLAVE_ID;
     requestId = lastRequestId;
     functionCode = lastFunctionCode;
     rx = rxCount;
     tx = txCount;
     errors = errorCount;
+    missed = missedCount;
   }
 
 
@@ -474,6 +477,7 @@ namespace ModbusSlave {
 
       Serial.println(F("FOREIGN SLAVE ID"));
 
+      missedCount++;
       return;
     }
 
