@@ -26,10 +26,43 @@ namespace ModbusSlave {
   // TRAFFIC STATISTICS
   // ------------------------------------------
 
-  uint32_t requestCount = 0;
-  uint32_t responseCount = 0;
+  uint32_t rxCount = 0;
+  uint32_t txCount = 0;
+  uint32_t errorCount = 0;
   uint8_t lastRequestId = 0xFF;
   uint8_t lastFunctionCode = 0;
+
+  // Validate the RTU length before the PDU handler accesses fields.
+  // Fixed-size requests (FC01-06) are exactly 8 bytes including CRC.
+  // FC15/16 carry a byte-count field at offset 6.
+  bool hasValidRequestLength(const ModbusADU &adu) {
+    const uint16_t length = adu.getRtuLen();
+
+    if (length < 4) {
+      return false;
+    }
+
+    switch (adu.rtu[1]) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+        return length == 8;
+
+      case 15:
+      case 16:
+        return length >= 9 &&
+               length == (uint16_t)(9 + adu.rtu[6]);
+
+      default:
+        // Unknown function codes are valid candidates for an
+        // Illegal Function exception, provided the RTU frame
+        // contains at least address, function and CRC.
+        return true;
+    }
+  }
 
 
   // ------------------------------------------
@@ -87,8 +120,9 @@ namespace ModbusSlave {
 
   void begin() {
 
-    requestCount = 0;
-    responseCount = 0;
+    rxCount = 0;
+    txCount = 0;
+    errorCount = 0;
     lastRequestId = 0xFF;
     lastFunctionCode = 0;
 
@@ -266,12 +300,14 @@ namespace ModbusSlave {
 
   void getDisplayData(uint8_t &slaveId, uint8_t &requestId,
                       uint8_t &functionCode,
-                      uint32_t &requests, uint32_t &responses) {
+                      uint32_t &rx, uint32_t &tx,
+                      uint32_t &errors) {
     slaveId = SLAVE_ID;
     requestId = lastRequestId;
     functionCode = lastFunctionCode;
-    requests = requestCount;
-    responses = responseCount;
+    rx = rxCount;
+    tx = txCount;
+    errors = errorCount;
   }
 
 
@@ -303,6 +339,10 @@ namespace ModbusSlave {
     if (error == MODBUS_RTU_TIMEOUT) {
       return;
     }
+
+    // Count every completed receive event, including CRC and
+    // RTU framing errors. A pure timeout is not an RX frame.
+    rxCount++;
 
     // Any completed or malformed receive event wakes the OLED.
     Display::activity();
@@ -376,8 +416,14 @@ namespace ModbusSlave {
       Serial.println(error);
 
       Serial.print(F("CRC CHECK: "));
-      Serial.println(adu.crcGood() ? F("OK") : F("BAD"));
+      if (error == MODBUS_RTU_CRC_ERROR) {
+        Serial.println(F("BAD"));
+      }
+      else {
+        Serial.println(F("N/A"));
+      }
 
+      errorCount++;
       Indicators::error();
 
       return;
@@ -392,6 +438,7 @@ namespace ModbusSlave {
 
       Serial.println(F("CRC ERROR"));
 
+      errorCount++;
       Indicators::error();
 
       return;
@@ -417,9 +464,14 @@ namespace ModbusSlave {
       return;
     }
 
-    // Count only valid requests addressed to this Slave.
-    // Broadcast (ID 0), foreign IDs and bad CRC frames are excluded.
-    requestCount++;
+    // Only structurally complete requests may reach the PDU
+    // handler. Do not let CRC bytes substitute for missing data.
+    if (!hasValidRequestLength(adu)) {
+      Serial.println(F("INVALID PDU LENGTH"));
+      errorCount++;
+      Indicators::error();
+      return;
+    }
 
 
     // ----------------------------------------
@@ -498,7 +550,7 @@ namespace ModbusSlave {
 
     if (modbusComm->writeAdu(adu)) {
 
-      responseCount++;
+      txCount++;
 
       Serial.println(F("RESPONSE SENT"));
 
