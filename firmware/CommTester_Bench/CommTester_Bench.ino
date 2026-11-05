@@ -61,12 +61,19 @@ void loop() {
 
   IndicatorMode mode = Indicators::getMode();
 
+  uint8_t slaveId = 1;
+  uint8_t masterId = 0xFF;
+  uint8_t functionCode = 0;
   uint32_t requests = 0;
   uint32_t responses = 0;
 
-  ModbusSlave::getStatistics(requests, responses);
+  ModbusSlave::getDisplayData(
+    slaveId, masterId, functionCode, requests, responses
+  );
 
-  Display::update(mode, requests, responses);
+  Display::update(
+    mode, slaveId, masterId, functionCode, requests, responses
+  );
 
 
   // ------------------------------------------
