@@ -949,3 +949,42 @@ Use incremental row updates: keep the full screen draw for initialization only, 
 ### NEXT STEP
 
 Implement the minimal display-only incremental refresh, then compile and verify that Modbus operation is unchanged and that routine counter updates no longer clear/redraw the entire OLED.
+
+## CHECKPOINT-40 — OLED incremental row refresh implemented (compile pending)
+
+### CHANGE
+
+- Updated `firmware/CommTester_Bench/display.cpp` only.
+- Kept `u8x8.clearDisplay()` exclusively in the initial full-screen draw called by `Display::begin()`.
+- `Display::update()` now compares the incoming values with the cached values and redraws only affected rows:
+  - row 1: Slave/destination addresses;
+  - row 3: function code and operation;
+  - row 4: RX/TX counters;
+  - row 5: response rate;
+  - row 6: missed responses.
+- Rows are written as exactly 16 characters, padding with spaces to erase remnants of longer previous values.
+- The title and serial-format rows are drawn at initialization and are not refreshed during normal polling.
+- No changes to `display.h`, Modbus processing, RTU transport, indicators, pin assignments, or external libraries.
+
+### SOURCE REVIEW
+
+- Fresh GitHub source fetched before editing: PASS.
+- Updated file fetched after commit: PASS.
+- Exactly one `clearDisplay()` call remains, inside the initial full-screen draw.
+- `Display::update()` contains no full-screen redraw call.
+- Incremental row update and 16-character row padding confirmed by source inspection.
+
+### TEST
+
+- Source update: committed.
+- Arduino Nano compile: NOT YET RUN.
+- OLED flicker check on hardware: NOT YET RUN.
+- Modbus regression after display change: NOT YET RUN.
+
+### NEXT STEP
+
+Compile and upload this revision. Verify that routine Modbus polling no longer clears the full OLED, that only changed rows update, and that shorter values leave no stale characters. Then rerun `modbus_test_all.py` to confirm no protocol regression.
+
+### BLOCKERS
+
+Hardware behavior and compilation remain unverified. Do not proceed to encoder implementation until this display change is accepted.
