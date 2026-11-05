@@ -191,7 +191,7 @@ namespace {
   }
 
   void drawRate(uint32_t requests, uint32_t responses) {
-    char rateText[13] = "RATE:--.-%";
+    char rateText[13] = "RATE:---.-%";
 
     if (requests > 0) {
       uint16_t rateTenths =
