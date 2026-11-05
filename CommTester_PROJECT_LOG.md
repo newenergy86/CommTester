@@ -715,3 +715,52 @@ Compile the current GitHub firmware for Arduino Nano. Report compiler errors, Fl
 
 Build size and runtime cost of the 64-bit percentage calculation are TBD. No hardware PASS is claimed for the new statistics.
 
+
+
+---
+
+## CHECKPOINT-34 — OLED traffic statistics firmware compile PASS
+
+### TEST
+
+The user compiled the current GitHub firmware for Arduino Nano and reported:
+
+- Flash: 17,706 bytes (57% of 30,720 bytes).
+- Global SRAM: 1,568 bytes (76% of 2,048 bytes).
+- Compiler-reported remaining SRAM: 480 bytes.
+- Compilation: PASS.
+
+Compared with the preceding U8X8 build before traffic statistics (CHECKPOINT-32):
+
+- Flash increased from 16,576 to 17,706 bytes (+1,130 bytes).
+- Global SRAM increased from 1,508 to 1,568 bytes (+60 bytes).
+- Compiler-reported remaining SRAM decreased from 540 to 480 bytes.
+
+### FACTS
+
+- The current statistics implementation compiles for the target Arduino Nano.
+- The compiler-reported global SRAM remainder is 480 bytes. This is not a direct measurement of worst-case runtime stack margin.
+- The user has not yet reported uploading or testing the statistics firmware on hardware.
+- The build report is from the user's local Arduino environment.
+
+### DECISION
+
+- The compile and memory result is accepted as sufficient to proceed to controlled hardware verification.
+- No further memory optimization is justified before testing the actual feature.
+- Keep the current implementation unchanged during the first hardware test unless a reproducible defect is found.
+
+### TEST — PENDING HARDWARE
+
+1. Upload the compiled firmware and enter SLAVE mode. Expected initial display: REQ=0, RESP=0, RATE=--.-%, MISS=0.
+2. Send 10 valid requests to Slave ID 1. Expected: REQ=10, RESP=10, RATE=100.0%, MISS=0.
+3. Send valid requests addressed to another ID, one Broadcast request (ID 0), and one invalid-CRC request. Expected: all four displayed statistics remain unchanged.
+4. Send a valid request to ID 1 that produces a Modbus Exception response. Expected: REQ and RESP both increment by one.
+
+### NEXT STEP
+
+Upload the compiled firmware and run the hardware acceptance test above. Report the actual OLED values and any unexpected behavior.
+
+### BLOCKERS
+
+No compile blocker. Runtime display behavior, counter semantics on hardware and regression of existing SERVICE/SLAVE functionality remain to be verified.
+
