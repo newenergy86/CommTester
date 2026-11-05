@@ -243,7 +243,7 @@ namespace {
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
                        uint8_t functionCode,
                        uint32_t rx, uint32_t tx,
-                       uint32_t errors) {
+                       uint32_t errors, uint32_t missed) {
     u8x8.clearDisplay();
     drawRow(0, "CommTester v0.4");
 
