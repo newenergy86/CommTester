@@ -370,7 +370,10 @@ namespace ModbusSlave {
 
     Serial.print(F("CRC: "));
 
-    if (adu.crcGood()) {
+    if (error == MODBUS_RTU_FRAME_ERROR) {
+      Serial.println(F("N/A"));
+    }
+    else if (adu.crcGood()) {
       Serial.println(F("OK"));
     }
     else {
