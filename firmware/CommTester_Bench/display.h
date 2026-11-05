@@ -8,7 +8,8 @@ namespace Display {
   void activity();
   void update(uint8_t slaveId, uint8_t masterId,
               uint8_t functionCode, uint32_t rx,
-              uint32_t tx, uint32_t errors);
+              uint32_t tx, uint32_t errors,
+              uint32_t missed);
 }
 
 #endif
