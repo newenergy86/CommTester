@@ -9,36 +9,157 @@ namespace {
 
   bool displayReady = false;
   IndicatorMode displayedMode = IND_SERVICE;
+  uint8_t displayedSlaveId = 0;
+  uint8_t displayedMasterId = 0xFF;
+  uint8_t displayedFunctionCode = 0;
   uint32_t displayedRequests = 0;
   uint32_t displayedResponses = 0;
 
-  void drawCounter(uint8_t row, const char* prefix, uint32_t value) {
-    char text[17];
+  void appendUnsigned(char *text, uint8_t &position, uint32_t value) {
+    char digits[10];
+    uint8_t count = 0;
 
-    for (uint8_t i = 0; i < 6; i++) {
-      text[i] = prefix[i];
-    }
-
-    text[16] = '\0';
-
-    for (int8_t i = 15; i >= 6; i--) {
-      text[i] = '0' + (value % 10);
+    do {
+      digits[count++] = '0' + (value % 10);
       value /= 10;
+    } while (value > 0 && count < sizeof(digits));
+
+    while (count > 0) {
+      text[position++] = digits[--count];
     }
 
-    u8x8.drawString(0, row, text);
+    text[position] = '\0';
   }
 
-  void drawSlaveScreen(uint32_t requests, uint32_t responses) {
+  // Keep both counters on one 16-character OLED row.
+  // Values above 9999 use compact k/M/G notation.
+  void formatCompactCounter(char *out, uint32_t value) {
+    uint32_t scaled;
+    uint8_t pos = 0;
+
+    if (value < 10000UL) {
+      appendUnsigned(out, pos, value);
+      return;
+    }
+
+    if (value < 1000000UL) {
+      scaled = value / 1000UL;
+      appendUnsigned(out, pos, scaled);
+      out[pos++] = 'k';
+    }
+    else if (value < 10000000UL) {
+      scaled = value / 100000UL;
+      out[pos++] = '0' + (scaled / 10);
+      out[pos++] = '.';
+      out[pos++] = '0' + (scaled % 10);
+      out[pos++] = 'M';
+    }
+    else if (value < 1000000000UL) {
+      scaled = value / 1000000UL;
+      appendUnsigned(out, pos, scaled);
+      out[pos++] = 'M';
+    }
+    else {
+      scaled = value / 100000000UL;
+      out[pos++] = '0' + (scaled / 10);
+      out[pos++] = '.';
+      out[pos++] = '0' + (scaled % 10);
+      out[pos++] = 'G';
+    }
+
+    out[pos] = '\0';
+  }
+
+  void drawTraffic(uint32_t requests, uint32_t responses) {
+    char rx[5];
+    char tx[5];
+    char line[17] = "RX:";
+    uint8_t pos = 3;
+
+    formatCompactCounter(rx, requests);
+    formatCompactCounter(tx, responses);
+
+    for (uint8_t i = 0; rx[i] != '\0'; i++) {
+      line[pos++] = rx[i];
+    }
+
+    line[pos++] = ' ';
+    line[pos++] = 'T';
+    line[pos++] = 'X';
+    line[pos++] = ':';
+
+    for (uint8_t i = 0; tx[i] != '\0' && pos < 16; i++) {
+      line[pos++] = tx[i];
+    }
+
+    line[pos] = '\0';
+    u8x8.drawString(0, 4, line);
+  }
+
+  void drawFunction(uint8_t functionCode) {
+    char line[17] = "FC:00 UNKNOWN";
+
+    if (functionCode == 0) {
+      u8x8.drawString(0, 3, "FC:--");
+      return;
+    }
+
+    line[3] = '0' + (functionCode / 10);
+    line[4] = '0' + (functionCode % 10);
+
+    const char *description = "UNKNOWN";
+
+    switch (functionCode) {
+      case 1:  description = "READ COIL";  break;
+      case 2:  description = "READ DI";    break;
+      case 3:  description = "READ HR";    break;
+      case 4:  description = "READ IR";    break;
+      case 5:  description = "WRITE COIL"; break;
+      case 6:  description = "WRITE HR";   break;
+      case 15: description = "WRITE COIL"; break;
+      case 16: description = "WRITE HR";   break;
+    }
+
+    line[5] = ' ';
+    uint8_t pos = 6;
+
+    while (*description != '\0' && pos < 16) {
+      line[pos++] = *description++;
+    }
+
+    line[pos] = '\0';
+    u8x8.drawString(0, 3, line);
+  }
+
+  void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
+                       uint8_t functionCode,
+                       uint32_t requests, uint32_t responses) {
+    char line[17];
 
     u8x8.clearDisplay();
+    u8x8.drawString(0, 0, "CommTester v0.4");
 
-    u8x8.drawString(0, 0, "SLAVE ID:01");
+    line[0] = 'S'; line[1] = 'l'; line[2] = 'a'; line[3] = 'v';
+    line[4] = 'e'; line[5] = ':'; line[6] = '0' + (slaveId / 10);
+    line[7] = '0' + (slaveId % 10); line[8] = '\0';
+    u8x8.drawString(0, 1, line);
 
-    drawCounter(1, "REQ : ", requests);
-    drawCounter(2, "RESP: ", responses);
+    if (masterId == 0xFF) {
+      u8x8.drawString(0, 2, "Master:--");
+    }
+    else {
+      line[0] = 'M'; line[1] = 'a'; line[2] = 's'; line[3] = 't';
+      line[4] = 'e'; line[5] = 'r'; line[6] = ':';
+      line[7] = '0' + (masterId / 10);
+      line[8] = '0' + (masterId % 10);
+      line[9] = '\0';
+      u8x8.drawString(0, 2, line);
+    }
 
-    char rateText[13] = "RATE:  --.-%";
+    drawFunction(functionCode);
+    drawTraffic(requests, responses);
+
+    char rateText[13] = "RATE:--.-%";
 
     if (requests > 0) {
       uint16_t rateTenths =
@@ -49,34 +170,35 @@ namespace {
       }
 
       uint16_t wholePercent = rateTenths / 10;
-
-      rateText[6] = (wholePercent >= 100) ? '1' :
+      rateText[5] = (wholePercent >= 100) ? '1' :
                     (wholePercent >= 10) ? ('0' + wholePercent / 10) : ' ';
-      rateText[7] = (wholePercent >= 10) ? ('0' + (wholePercent / 10) % 10) : ' ';
-      rateText[8] = '0' + (wholePercent % 10);
-      rateText[9] = '.';
-      rateText[10] = '0' + (rateTenths % 10);
+      rateText[6] = (wholePercent >= 10) ? ('0' + (wholePercent / 10) % 10) : ' ';
+      rateText[7] = '0' + (wholePercent % 10);
+      rateText[8] = '.';
+      rateText[9] = '0' + (rateTenths % 10);
     }
 
-    u8x8.drawString(0, 3, rateText);
+    u8x8.drawString(0, 5, rateText);
 
     uint32_t missed = (requests >= responses) ?
                       (requests - responses) : 0;
+    char missText[17] = "MISS:";
+    uint8_t missPos = 5;
+    appendUnsigned(missText, missPos, missed);
+    u8x8.drawString(0, 6, missText);
 
-    drawCounter(4, "MISS: ", missed);
-
-    u8x8.drawString(0, 5, "9600 8N1");
+    u8x8.drawString(0, 7, "9600 8N1");
   }
 
-  void drawScreen(IndicatorMode mode, uint32_t requests, uint32_t responses) {
-
+  void drawScreen(IndicatorMode mode, uint8_t slaveId, uint8_t masterId,
+                  uint8_t functionCode,
+                  uint32_t requests, uint32_t responses) {
     if (mode == IND_SLAVE) {
-      drawSlaveScreen(requests, responses);
+      drawSlaveScreen(slaveId, masterId, functionCode, requests, responses);
       return;
     }
 
     u8x8.clearDisplay();
-
     u8x8.drawString(0, 0, "CommTester v0.4");
     u8x8.drawString(0, 1, "MODE: SERVICE");
     u8x8.drawString(0, 2, "RS232: 9600");
@@ -88,33 +210,43 @@ namespace {
 }
 
 void Display::begin() {
-
   u8x8.begin();
   u8x8.setFont(u8x8_font_chroma48medium8_r);
 
   displayReady = true;
   displayedMode = IND_SERVICE;
+  displayedSlaveId = 0;
+  displayedMasterId = 0xFF;
+  displayedFunctionCode = 0;
   displayedRequests = 0;
   displayedResponses = 0;
 
-  drawScreen(displayedMode, 0, 0);
+  drawScreen(displayedMode, 1, 0xFF, 0, 0, 0);
 }
 
-void Display::update(IndicatorMode mode, uint32_t requests, uint32_t responses) {
-
+void Display::update(IndicatorMode mode, uint8_t slaveId, uint8_t masterId,
+                     uint8_t functionCode,
+                     uint32_t requests, uint32_t responses) {
   if (!displayReady) {
     return;
   }
 
   if (mode == displayedMode &&
       (mode != IND_SLAVE ||
-       (requests == displayedRequests && responses == displayedResponses))) {
+       (slaveId == displayedSlaveId &&
+        masterId == displayedMasterId &&
+        functionCode == displayedFunctionCode &&
+        requests == displayedRequests &&
+        responses == displayedResponses))) {
     return;
   }
 
   displayedMode = mode;
+  displayedSlaveId = slaveId;
+  displayedMasterId = masterId;
+  displayedFunctionCode = functionCode;
   displayedRequests = requests;
   displayedResponses = responses;
 
-  drawScreen(displayedMode, requests, responses);
+  drawScreen(mode, slaveId, masterId, functionCode, requests, responses);
 }
