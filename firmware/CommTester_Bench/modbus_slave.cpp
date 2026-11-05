@@ -1,5 +1,5 @@
 #include "modbus_slave.h"
-#include "serial_console.h"
+#include "rs232_port.h"
 #include "indicators.h"
 #include "modbus_rtu.h"
 #include "modbus_config.h"
@@ -197,7 +197,7 @@ namespace ModbusSlave {
     // ----------------------------------------
 
     SoftwareSerial &rs232 =
-      SerialConsole::getSerial();
+      RS232Port::getSerial();
 
 
     // ----------------------------------------
