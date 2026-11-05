@@ -9,7 +9,6 @@ const byte LED_TX    = 3;
 const byte LED_ERROR = 4;
 
 const byte BUZZER    = 6;
-const byte BUTTON    = 7;
 
 
 // ============================================
