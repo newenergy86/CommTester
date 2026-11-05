@@ -1098,3 +1098,44 @@ Compile the latest GitHub revision for Arduino Nano / ATmega328P and report comp
 ### BLOCKERS
 
 All changes are source-level only. No compile or hardware PASS is claimed. The previous compile figures (16,962 bytes Flash / 1,592 bytes global SRAM) predate this revision.
+
+
+---
+
+## CHECKPOINT-43 — RATE and ERR/MISS display corrections (verification pending)
+
+### USER TEST
+
+The user reported: RX=7, TX=4, ERR=2. Normal request, bad CRC rejection, foreign Slave ID handling, unknown function exception, illegal register address exception, and recovery passed. The malformed FC03 test reported FAIL despite the device returning no response.
+
+### CHANGE
+
+- Corrected RATE digit formatting. The previous display duplicated the tens digit for percentages from 10% through 99%; 57.1% now formats as 57.1%.
+- Combined ERR and MISS counters on OLED row 2 as `ERR:n MISS:n`.
+- MISS starts at zero and increments for a valid, structurally complete request addressed to another Slave ID. A broadcast request is also intentionally ignored and counted as MISS.
+- Request structure validation now occurs before the foreign-ID check, so malformed requests count as ERR rather than MISS.
+- Display update, wake redraw and cached statistics now include MISS.
+- No external library was modified.
+
+### DECISION
+
+For the Nano Slave implementation, MISS means a valid request that this Slave intentionally ignores because the destination address is not its own. CRC/framing errors and malformed request lengths count as ERR.
+
+Expected result for the user's test sequence: RX=7, TX=4, ERR=2, MISS=1, RATE=57.1%.
+
+### TEST / ANALYSIS
+
+- The supplied test-05 frame `01 03 00 00 00 19 84` has a valid CRC over the five-byte prefix `01 03 00 00 00`, but its FC03 PDU is incomplete. It should be rejected without a response under the current firmware policy.
+- The test script is not stored in the repository; its test-05 assertion cannot yet be inspected. The FAIL result likely reflects an expectation mismatch, but this remains TBD until the script is reviewed.
+- GitHub source fetch and post-write verification: PASS.
+- Arduino Nano compilation: NOT RUN.
+- OLED hardware verification: NOT RUN.
+- Full Modbus regression after these changes: NOT RUN.
+
+### NEXT STEP
+
+Compile and upload the latest revision. Verify initial ERR=0/MISS=0, RATE=57.1% and ERR=2/MISS=1 after the reported seven-frame sequence. Provide `modbus_error_test.py` if test 05 needs its assertion corrected.
+
+### BLOCKERS
+
+No compile or hardware PASS is claimed for this checkpoint. The test-05 assertion remains unverified because the script is not in GitHub.
