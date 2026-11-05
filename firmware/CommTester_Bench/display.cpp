@@ -8,11 +8,30 @@ U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE);
 namespace {
 
   bool displayReady = false;
-  uint8_t displayedSlaveId = 0;
+  uint8_t displayedSlaveId = 1;
   uint8_t displayedMasterId = 0xFF;
   uint8_t displayedFunctionCode = 0;
   uint32_t displayedRequests = 0;
   uint32_t displayedResponses = 0;
+
+  // Always write a complete 16-character row. This also removes stale
+  // characters when a newly formatted value is shorter than the old one.
+  void drawRow(uint8_t row, const char *text) {
+    char line[17];
+    uint8_t i = 0;
+
+    while (i < 16 && text[i] != '\0') {
+      line[i] = text[i];
+      i++;
+    }
+
+    while (i < 16) {
+      line[i++] = ' ';
+    }
+
+    line[16] = '\0';
+    u8x8.drawString(0, row, line);
+  }
 
   void appendUnsigned(char *text, uint8_t &position, uint32_t value) {
     char digits[10];
@@ -78,7 +97,7 @@ namespace {
     formatCompactCounter(rx, requests);
     formatCompactCounter(tx, responses);
 
-    for (uint8_t i = 0; rx[i] != '\0'; i++) {
+    for (uint8_t i = 0; rx[i] != '\0' && pos < 16; i++) {
       line[pos++] = rx[i];
     }
 
@@ -92,7 +111,7 @@ namespace {
     }
 
     line[pos] = '\0';
-    u8x8.drawString(0, 4, line);
+    drawRow(4, line);
   }
 
   void drawFunction(uint8_t functionCode) {
@@ -100,7 +119,7 @@ namespace {
     uint8_t pos = 3;
 
     if (functionCode == 0) {
-      u8x8.drawString(0, 3, "FC:--");
+      drawRow(3, "FC:--");
       return;
     }
 
@@ -128,7 +147,7 @@ namespace {
     }
 
     line[pos] = '\0';
-    u8x8.drawString(0, 3, line);
+    drawRow(3, line);
   }
 
   void appendAddress(char *line, uint8_t &pos, uint8_t address) {
@@ -163,20 +182,10 @@ namespace {
     }
 
     line[pos] = '\0';
-    u8x8.drawString(0, 1, line);
+    drawRow(1, line);
   }
 
-  void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
-                       uint8_t functionCode,
-                       uint32_t requests, uint32_t responses) {
-    u8x8.clearDisplay();
-    u8x8.drawString(0, 0, "CommTester v0.4");
-
-    drawAddressPair(slaveId, masterId);
-
-    drawFunction(functionCode);
-    drawTraffic(requests, responses);
-
+  void drawRate(uint32_t requests, uint32_t responses) {
     char rateText[13] = "RATE:--.-%";
 
     if (requests > 0) {
@@ -196,18 +205,32 @@ namespace {
       rateText[9] = '0' + (rateTenths % 10);
     }
 
-    u8x8.drawString(0, 5, rateText);
+    drawRow(5, rateText);
+  }
 
+  void drawMissed(uint32_t requests, uint32_t responses) {
     uint32_t missed = (requests >= responses) ?
                       (requests - responses) : 0;
     char missText[17] = "MISS:";
     uint8_t missPos = 5;
-    appendUnsigned(missText, missPos, missed);
-    u8x8.drawString(0, 6, missText);
 
-    u8x8.drawString(0, 7, "9600 8N1");
+    appendUnsigned(missText, missPos, missed);
+    drawRow(6, missText);
   }
 
+  void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
+                       uint8_t functionCode,
+                       uint32_t requests, uint32_t responses) {
+    u8x8.clearDisplay();
+    drawRow(0, "CommTester v0.4");
+
+    drawAddressPair(slaveId, masterId);
+    drawFunction(functionCode);
+    drawTraffic(requests, responses);
+    drawRate(requests, responses);
+    drawMissed(requests, responses);
+    drawRow(7, "9600 8N1");
+  }
 
 }
 
@@ -216,13 +239,16 @@ void Display::begin() {
   u8x8.setFont(u8x8_font_chroma48medium8_r);
 
   displayReady = true;
-  displayedSlaveId = 0;
+  displayedSlaveId = 1;
   displayedMasterId = 0xFF;
   displayedFunctionCode = 0;
   displayedRequests = 0;
   displayedResponses = 0;
 
-  drawSlaveScreen(1, 0xFF, 0, 0, 0);
+  // The only full-screen draw: initial display setup.
+  drawSlaveScreen(displayedSlaveId, displayedMasterId,
+                  displayedFunctionCode, displayedRequests,
+                  displayedResponses);
 }
 
 void Display::update(uint8_t slaveId, uint8_t masterId,
@@ -232,12 +258,25 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     return;
   }
 
-  if (slaveId == displayedSlaveId &&
-      masterId == displayedMasterId &&
-      functionCode == displayedFunctionCode &&
-      requests == displayedRequests &&
-      responses == displayedResponses) {
-    return;
+  const bool addressesChanged =
+    (slaveId != displayedSlaveId) || (masterId != displayedMasterId);
+  const bool functionChanged =
+    (functionCode != displayedFunctionCode);
+  const bool countersChanged =
+    (requests != displayedRequests) || (responses != displayedResponses);
+
+  if (addressesChanged) {
+    drawAddressPair(slaveId, masterId);
+  }
+
+  if (functionChanged) {
+    drawFunction(functionCode);
+  }
+
+  if (countersChanged) {
+    drawTraffic(requests, responses);
+    drawRate(requests, responses);
+    drawMissed(requests, responses);
   }
 
   displayedSlaveId = slaveId;
@@ -245,6 +284,4 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   displayedFunctionCode = functionCode;
   displayedRequests = requests;
   displayedResponses = responses;
-
-  drawSlaveScreen(slaveId, masterId, functionCode, requests, responses);
 }
