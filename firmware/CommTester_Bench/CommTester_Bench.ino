@@ -26,15 +26,16 @@ void loop() {
   uint8_t slaveId = 1;
   uint8_t masterId = 0xFF;
   uint8_t functionCode = 0;
-  uint32_t requests = 0;
-  uint32_t responses = 0;
+  uint32_t rx = 0;
+  uint32_t tx = 0;
+  uint32_t errors = 0;
 
   ModbusSlave::getDisplayData(
-    slaveId, masterId, functionCode, requests, responses
+    slaveId, masterId, functionCode, rx, tx, errors
   );
 
   Display::update(
-    slaveId, masterId, functionCode, requests, responses
+    slaveId, masterId, functionCode, rx, tx, errors
   );
 
   ModbusSlave::update();
