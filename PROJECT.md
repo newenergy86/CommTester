@@ -80,7 +80,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8X8_SSD1306_128X64_NONAME_HW_I2C` (text-only mode).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems. The integrated U8X8 text-mode firmware has also been flashed; the user reports no visible failures so far, but a complete display-enabled regression is not recorded.
-- The SERVICE screen retains its existing status information. The SLAVE screen displays request count, sent-response count, response rate and missed-response count. Counters are 32-bit; the screen uses ten-digit fields. The user compiled the updated firmware successfully and reported Flash 17,706 bytes (57%), global SRAM 1,568 bytes (76%), with 480 bytes compiler-reported remaining. This is a compile result only; hardware acceptance testing of the new statistics remains pending. The compiler-reported remainder is not a worst-case runtime stack measurement.
+- The SERVICE screen retains its existing status information. The SLAVE screen is being extended to show the local Slave ID, the destination ID from the latest valid RTU frame (labelled `Master` on the display), the last function code, RX/TX counters on one row, response rate, missed responses, and `9600 8N1`. The 128×64 U8X8 display has 16 columns, so the two ID labels occupy separate rows. Counters remain 32-bit; RX/TX values above 9999 use compact k/M/G notation to fit on one row, while MISS is displayed as a full decimal value. The previous statistics firmware compiled successfully at Flash 17,706 bytes and global SRAM 1,568 bytes; the updated screen/API build still requires compilation and hardware acceptance testing.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -90,7 +90,7 @@ The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/
 - `M1` — Modbus RTU Slave on Nano — completed and tested
 - `M2` — Modbus RTU Master — deferred to future MCU revision
 - `M3` — Bidirectional line testing — future full-featured revision
-- `M4` — Diagnostics and statistics — IN PROGRESS (traffic statistics compile PASS; hardware acceptance pending)
+- `M4` — Diagnostics and statistics — IN PROGRESS (traffic statistics compile PASS; updated screen build pending)
 - `M5` — Display — IN PROGRESS
 - `M6` — Portable enclosure
 - `M7` — Full-featured CommTester hardware/firmware revision
@@ -142,13 +142,14 @@ The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested
 - Remaining SRAM margin for the display and runtime stack.
 - Record a complete functional regression with the OLED-enabled U8X8 firmware.
 - Worst-case runtime stack margin for the U8X8 firmware remains unmeasured.
-- Run the statistics acceptance test on hardware, including foreign IDs, Broadcast and invalid CRC.
+- Compile and run the updated OLED screen test, including display of foreign IDs and function codes.
+- Run the statistics acceptance test on hardware, including Broadcast and invalid CRC.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Upload the compiled statistics build and run the hardware acceptance test in CHECKPOINT-34. Verify the counters, rate, missed responses, foreign IDs, Broadcast and invalid CRC.
+Compile the updated OLED display build, then upload it and verify Slave ID, last request destination/function, RX/TX, RATE, MISS and serial format. Follow with the statistics acceptance test for addressed requests, foreign IDs, Broadcast and invalid CRC.
 
 ### BLOCKERS
 
-No confirmed blocker. Compilation passed; hardware verification of the statistics remains pending.
+Updated OLED layout/API compilation and hardware verification are pending. The previously compiled statistics build is not the same as this new display build.
