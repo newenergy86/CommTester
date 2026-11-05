@@ -79,7 +79,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8X8_SSD1306_128X64_NONAME_HW_I2C` (text-only mode).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems. The integrated U8X8 text-mode firmware has also been flashed; the user reports no visible failures so far, but a complete display-enabled regression is not recorded.
-- The Slave screen shows the local Slave ID, the destination ID from the latest valid RTU frame (labelled `MST`), the last function code, RX/TX counters on one row, response rate, missed responses, and current serial settings (`9600 8N1`). The two addresses share one row as `SLV:01 MST:01` (three-digit addresses are also supported); RX/TX counters share another row. Counters remain 32-bit; RX/TX values above 9999 use compact k/M/G notation to fit on one row, while MISS is displayed as a full decimal value. The previous statistics build used Flash 17,706 bytes and global SRAM 1,568 bytes. The SERVICE-free source now compiles successfully at Flash 16,962 bytes (55%) and global SRAM 1,592 bytes (77%), leaving 456 bytes. Relative to the previous report, Flash decreased by 744 bytes and global SRAM increased by 24 bytes; treat this comparison as exact only if the toolchain and library versions are unchanged.
+- The Slave screen shows the local Slave ID, destination ID from the latest valid RTU frame (`MST`), last function code, RX/TX counters, response rate, ERR, MISS and serial settings (`9600 8N1`). RX counts every completed receive event, including bad-CRC and malformed RTU/PDU frames; TX counts responses successfully handed to the serial transport; RATE is TX/RX. ERR counts RTU CRC/framing errors and malformed request lengths. A valid request for another Slave ID is included in RX but does not increment ERR or TX. Unsupported function codes and valid requests producing Modbus exception responses are not counted as ERR. MISS is shown as `---` in the current Slave-only firmware because a Slave cannot determine whether a Master expected a response; it is reserved for future Master operation. RX/TX/ERR values use compact k/M/G notation when needed. The previous compile reports (Flash 17,706 bytes / SRAM 1,568 bytes and SERVICE-free Flash 16,962 bytes / SRAM 1,592 bytes) predate the current statistics changes and must not be treated as measurements of this revision.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -114,7 +114,7 @@ In particular:
 
 ### CURRENT STATE
 
-The Nano firmware source has been simplified to a single Modbus SLAVE operating mode. SERVICE command handling and mode switching have been removed. The Modbus Slave processing implementation is retained; its RS-232 dependency has been separated into `rs232_port`. The SERVICE-free firmware compiles successfully for Arduino Nano / ATmega328P: Flash 16,962 bytes (55%), global SRAM 1,592 bytes (77%), leaving 456 bytes. The reported Modbus function regression passed for FC01/02/03/04/05/06/15/16. An incremental OLED row-refresh change is now committed; its compile and hardware verification are pending.
+The Nano firmware is Slave-only. The current source revision adds RX/TX/ERR accounting, makes MISS unavailable (`---`) in Slave mode, rejects malformed request lengths before PDU processing, and preserves received frame length on RTU CRC/framing errors for diagnostics. These source changes are committed but have not yet been compiled or tested on hardware. The last known compile result (Flash 16,962 bytes, global SRAM 1,592 bytes) predates these changes.
 
 ### COMPLETED
 
@@ -129,6 +129,7 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 - Complete reported Modbus function regression passed after SERVICE removal; see CHECKPOINT-39.
 - Incremental OLED row refresh implemented in source; user confirmed that the screen no longer flickers.
 - RATE percent-sign formatting and 30-second OLED power-save/wake behavior implemented in source; compile/hardware verification pending in CHECKPOINT-41.
+- RX/TX/ERR statistics semantics and malformed-PDU length rejection implemented in source; verification pending in CHECKPOINT-42.
 
 ### DECISIONS
 
@@ -136,21 +137,24 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 - Keep the Nano prototype Slave-only; SERVICE remains in the long-term feature scope for a future MCU revision.
 - Defer Modbus Master on Nano; restore it for the future upgraded-MCU revision.
 - Do not modify the external `ModbusADU` library.
+- Count every completed receive event in RX; count only transmitted responses in TX; calculate RATE as TX/RX.
+- Count CRC, RTU framing and malformed supported-function request lengths in ERR. Keep MISS unavailable in Slave mode and reserve it for Master response timeouts.
 - Use SSD1306 OLED 128×64 with U8X8 text-only mode from the existing U8g2 package over hardware I²C; retain LCD 1602A only as a fallback.
 - Do not choose the future MCU until requirements and resource budget are clearer.
 
 ### OPEN QUESTIONS
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
-- Compile and verify RATE percent-sign formatting and OLED auto power-save/wake after 30 seconds of inactivity.
-- Run `modbus_test_all.py` again after the display/power-save changes.
-- Deliberate invalid-CRC rejection/recovery and RX/TX/ERROR indicator verification after SERVICE removal remain to be confirmed.
+- Compile and verify RATE percent-sign formatting, 30-second OLED sleep/wake, and the new RX/TX/ERR/MISS display.
+- Run `modbus_test_all.py` after the new statistics and PDU-length validation changes.
+- Verify bad CRC and malformed request accounting, foreign-ID accounting, and recovery after errors.
+- Confirm RX/TX/ERROR indicator behavior.
 - Encoder hardware and input handling are not implemented yet.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile and upload the OLED RATE/power-save revision. Verify the percent sign, 30-second sleep, wake on valid and invalid/error receive events, and uninterrupted Modbus responses while asleep. Then rerun the Modbus function regression. Confirm invalid-CRC recovery and RX/TX/ERROR indication before implementing encoder input and runtime settings.
+Compile and upload the RX/TX/ERR statistics and PDU-length validation revision. Verify display rows, RATE, MISS placeholder, CRC/malformed-frame rejection, foreign-ID handling, recovery after errors, OLED sleep/wake and all FC01/02/03/04/05/06/15/16 regression tests. Do not start encoder work until this revision passes.
 
 ### BLOCKERS
 
