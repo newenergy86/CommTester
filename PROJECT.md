@@ -19,7 +19,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
 - Indicators: RX/TX/ERROR LEDs and buzzer. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
-- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module now redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization. Compilation and OLED hardware verification of this incremental-refresh change are pending.
+- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. A 30-second inactivity power-save and wake on any non-timeout Modbus receive event are implemented in source. Compilation and OLED hardware verification are pending.
 
 ### Current operating mode
 
@@ -127,7 +127,8 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 - SERVICE mode and its command parser removed from the active Nano firmware; direct Slave startup implemented in source.
 - SERVICE-free Nano firmware compilation passed; Flash/SRAM usage recorded in CHECKPOINT-38.
 - Complete reported Modbus function regression passed after SERVICE removal; see CHECKPOINT-39.
-- Incremental OLED row refresh implemented in source; compile/hardware verification pending in CHECKPOINT-40.
+- Incremental OLED row refresh implemented in source; user confirmed that the screen no longer flickers.
+- RATE percent-sign formatting and 30-second OLED power-save/wake behavior implemented in source; compile/hardware verification pending in CHECKPOINT-41.
 
 ### DECISIONS
 
@@ -141,16 +142,16 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 ### OPEN QUESTIONS
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
-- Compile and verify the incremental OLED row-refresh change on hardware; confirm that routine updates do not clear the full screen.
-- Run `modbus_test_all.py` again after the display-only change.
+- Compile and verify RATE percent-sign formatting and OLED auto power-save/wake after 30 seconds of inactivity.
+- Run `modbus_test_all.py` again after the display/power-save changes.
 - Deliberate invalid-CRC rejection/recovery and RX/TX/ERROR indicator verification after SERVICE removal remain to be confirmed.
 - Encoder hardware and input handling are not implemented yet.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile and upload the incremental OLED-refresh revision. Verify flicker reduction and row correctness, then rerun the Modbus function regression. Confirm invalid-CRC recovery and RX/TX/ERROR indication before implementing encoder input and runtime settings.
+Compile and upload the OLED RATE/power-save revision. Verify the percent sign, 30-second sleep, wake on valid and invalid/error receive events, and uninterrupted Modbus responses while asleep. Then rerun the Modbus function regression. Confirm invalid-CRC recovery and RX/TX/ERROR indication before implementing encoder input and runtime settings.
 
 ### BLOCKERS
 
-SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The latest incremental OLED-refresh source change still needs compilation and hardware verification. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. SRAM headroom is 456 bytes, so stack usage must be considered before adding features.
+SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The user confirmed that incremental OLED row refresh removed the observed flicker. The latest RATE formatting and OLED power-save/wake source changes still need compilation and hardware verification. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. SRAM headroom is 456 bytes, so stack usage must be considered before adding features.
