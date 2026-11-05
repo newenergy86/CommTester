@@ -469,6 +469,17 @@ namespace ModbusSlave {
     Indicators::rx();
 
 
+    // Validate the complete request before deciding whether this
+    // Slave should answer it. Malformed foreign-address frames are ERR,
+    // not MISS.
+    if (!hasValidRequestLength(adu)) {
+      Serial.println(F("INVALID PDU LENGTH"));
+      errorCount++;
+      Indicators::error();
+      return;
+    }
+
+
     // ----------------------------------------
     // SLAVE ID
     // ----------------------------------------
@@ -477,16 +488,8 @@ namespace ModbusSlave {
 
       Serial.println(F("FOREIGN SLAVE ID"));
 
+      // Valid request intentionally ignored by this Slave.
       missedCount++;
-      return;
-    }
-
-    // Only structurally complete requests may reach the PDU
-    // handler. Do not let CRC bytes substitute for missing data.
-    if (!hasValidRequestLength(adu)) {
-      Serial.println(F("INVALID PDU LENGTH"));
-      errorCount++;
-      Indicators::error();
       return;
     }
 
