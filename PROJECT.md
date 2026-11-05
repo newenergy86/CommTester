@@ -79,7 +79,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8X8_SSD1306_128X64_NONAME_HW_I2C` (text-only mode).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems. The integrated U8X8 text-mode firmware has also been flashed; the user reports no visible failures so far, but a complete display-enabled regression is not recorded.
-- The Slave screen shows the local Slave ID, destination ID from the latest valid RTU frame (`MST`), last function code, RX/TX counters, response rate, ERR, MISS and serial settings (`9600 8N1`). RX counts every completed receive event, including bad-CRC and malformed RTU/PDU frames; TX counts responses successfully handed to the serial transport; RATE is TX/RX. ERR counts RTU CRC/framing errors and malformed request lengths. A valid request for another Slave ID is included in RX but does not increment ERR or TX. Unsupported function codes and valid requests producing Modbus exception responses are not counted as ERR. MISS is shown as `---` in the current Slave-only firmware because a Slave cannot determine whether a Master expected a response; it is reserved for future Master operation. RX/TX/ERR values use compact k/M/G notation when needed. The previous compile reports (Flash 17,706 bytes / SRAM 1,568 bytes and SERVICE-free Flash 16,962 bytes / SRAM 1,592 bytes) predate the current statistics changes and must not be treated as measurements of this revision.
+- The Slave screen shows the local Slave ID, destination ID from the latest valid RTU frame (`MST`), last function code, RX/TX counters, response rate, and combined ERR/MISS counters. RX counts every completed receive event, including bad-CRC and malformed RTU/PDU frames; TX counts responses successfully handed to the serial transport; RATE is TX/RX. ERR counts RTU CRC/framing errors and malformed request lengths. MISS counts valid, structurally complete requests that this Slave intentionally ignores because their destination ID is not its own (including broadcast ID 0). Malformed foreign-address frames count as ERR, not MISS. Unsupported function codes and valid requests producing Modbus exception responses are not counted as ERR. Both ERR and MISS start at zero and are displayed together on OLED row 2. RX/TX/ERR/MISS values use compact k/M/G notation when needed. The previous compile reports predate the current statistics changes and must not be treated as measurements of this revision.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -114,7 +114,7 @@ In particular:
 
 ### CURRENT STATE
 
-The Nano firmware is Slave-only. The current source revision adds RX/TX/ERR accounting, makes MISS unavailable (`---`) in Slave mode, rejects malformed request lengths before PDU processing, and preserves received frame length on RTU CRC/framing errors for diagnostics. These source changes are committed but have not yet been compiled or tested on hardware. The last known compile result (Flash 16,962 bytes, global SRAM 1,592 bytes) predates these changes.
+The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MISS, computes RATE as TX/RX, rejects malformed request lengths before PDU processing, and preserves received frame length on RTU CRC/framing errors for diagnostics. MISS counts valid requests ignored due to a foreign/broadcast destination ID. The RATE digit formatting and combined ERR/MISS OLED row are committed. Compilation and hardware verification of this revision are pending.
 
 ### COMPLETED
 
@@ -138,23 +138,24 @@ The Nano firmware is Slave-only. The current source revision adds RX/TX/ERR acco
 - Defer Modbus Master on Nano; restore it for the future upgraded-MCU revision.
 - Do not modify the external `ModbusADU` library.
 - Count every completed receive event in RX; count only transmitted responses in TX; calculate RATE as TX/RX.
-- Count CRC, RTU framing and malformed supported-function request lengths in ERR. Keep MISS unavailable in Slave mode and reserve it for Master response timeouts.
+- Count CRC, RTU framing and malformed supported-function request lengths in ERR. Count valid structurally complete requests ignored because of a foreign/broadcast destination ID in MISS.
 - Use SSD1306 OLED 128×64 with U8X8 text-only mode from the existing U8g2 package over hardware I²C; retain LCD 1602A only as a fallback.
 - Do not choose the future MCU until requirements and resource budget are clearer.
 
 ### OPEN QUESTIONS
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
-- Compile and verify RATE percent-sign formatting, 30-second OLED sleep/wake, and the new RX/TX/ERR/MISS display.
-- Run `modbus_test_all.py` after the new statistics and PDU-length validation changes.
-- Verify bad CRC and malformed request accounting, foreign-ID accounting, and recovery after errors.
+- Compile and verify RATE formatting, combined ERR/MISS row, 30-second OLED sleep/wake, and RX/TX/ERR/MISS accounting.
+- Correct `modbus_error_test.py` so a valid-CRC malformed FC03 request is expected to receive no response.
+- Run `modbus_test_all.py` after the latest statistics and PDU-length validation changes.
+- Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
 - Confirm RX/TX/ERROR indicator behavior.
 - Encoder hardware and input handling are not implemented yet.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile and upload the RX/TX/ERR statistics and PDU-length validation revision. Verify display rows, RATE, MISS placeholder, CRC/malformed-frame rejection, foreign-ID handling, recovery after errors, OLED sleep/wake and all FC01/02/03/04/05/06/15/16 regression tests. Do not start encoder work until this revision passes.
+Compile and upload the RATE/ERR/MISS display revision. Verify RATE=57.1% for RX=7/TX=4, the combined `ERR:2 MISS:1` row, default ERR=0/MISS=0, malformed-frame rejection, foreign-ID MISS accounting, recovery after errors, OLED sleep/wake and all FC01/02/03/04/05/06/15/16 regression tests. Do not start encoder work until this revision passes.
 
 ### BLOCKERS
 
