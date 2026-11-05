@@ -1,5 +1,6 @@
 #include "display.h"
 
+#include <Arduino.h>
 #include <U8x8lib.h>
 
 // SSD1306 128x64, hardware I2C, text-only mode
@@ -7,7 +8,11 @@ U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE);
 
 namespace {
 
+  const unsigned long DISPLAY_SLEEP_TIMEOUT = 30000UL;
+
   bool displayReady = false;
+  bool displaySleeping = false;
+  unsigned long lastActivityTime = 0;
   uint8_t displayedSlaveId = 1;
   uint8_t displayedMasterId = 0xFF;
   uint8_t displayedFunctionCode = 0;
@@ -205,6 +210,9 @@ namespace {
       rateText[9] = '0' + (rateTenths % 10);
     }
 
+    rateText[10] = '%';
+    rateText[11] = '\0';
+
     drawRow(5, rateText);
   }
 
@@ -239,6 +247,8 @@ void Display::begin() {
   u8x8.setFont(u8x8_font_chroma48medium8_r);
 
   displayReady = true;
+  displaySleeping = false;
+  lastActivityTime = millis();
   displayedSlaveId = 1;
   displayedMasterId = 0xFF;
   displayedFunctionCode = 0;
@@ -249,6 +259,24 @@ void Display::begin() {
   drawSlaveScreen(displayedSlaveId, displayedMasterId,
                   displayedFunctionCode, displayedRequests,
                   displayedResponses);
+}
+
+void Display::activity() {
+  if (!displayReady) {
+    return;
+  }
+
+  lastActivityTime = millis();
+
+  if (displaySleeping) {
+    u8x8.setPowerSave(0);
+    displaySleeping = false;
+
+    // Restore the latest cached screen after waking.
+    drawSlaveScreen(displayedSlaveId, displayedMasterId,
+                    displayedFunctionCode, displayedRequests,
+                    displayedResponses);
+  }
 }
 
 void Display::update(uint8_t slaveId, uint8_t masterId,
@@ -264,6 +292,16 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     (functionCode != displayedFunctionCode);
   const bool countersChanged =
     (requests != displayedRequests) || (responses != displayedResponses);
+
+  // Keep the cached data current while the physical display is asleep.
+  if (displaySleeping) {
+    displayedSlaveId = slaveId;
+    displayedMasterId = masterId;
+    displayedFunctionCode = functionCode;
+    displayedRequests = requests;
+    displayedResponses = responses;
+    return;
+  }
 
   if (addressesChanged) {
     drawAddressPair(slaveId, masterId);
@@ -284,4 +322,9 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   displayedFunctionCode = functionCode;
   displayedRequests = requests;
   displayedResponses = responses;
+
+  if (millis() - lastActivityTime >= DISPLAY_SLEEP_TIMEOUT) {
+    u8x8.setPowerSave(1);
+    displaySleeping = true;
+  }
 }
