@@ -1143,3 +1143,57 @@ No compile or hardware PASS is claimed for this checkpoint. The test-05 assertio
 ### PROTOCOL NOTE
 
 The Modbus Application Protocol specification defines exception 03 (Illegal Data Value) for faults in request-data structure, including an incorrect implied length. The current Nano firmware deliberately discards a short fixed-length request without a response after detecting the malformed length. This is a project behavior choice, not a claim that silence is mandated by the specification. Whether to send exception 03 instead is TBD and should be decided after reviewing the test script and confirming the desired CommTester diagnostic behavior.
+
+
+---
+
+## CHECKPOINT-44 — OLED wake redraw uses current statistics (verification pending)
+
+### USER-REPORTED ISSUE
+
+After the OLED entered power-save mode following 30 seconds of inactivity, the next received Modbus frame woke the display, but the displayed counters remained at zero / did not reflect that frame.
+
+### FACT — SOURCE-LEVEL CAUSE
+
+- `ModbusSlave::update()` increments `rxCount` and then calls `Display::activity()` for a non-timeout receive event.
+- In the previous implementation, `Display::activity()` woke the OLED and immediately called `drawSlaveScreen()` using the display module's cached values.
+- The new values from the completed frame were passed to `Display::update()` on the following main-loop iteration.
+- Therefore, the wake path redrew the stale snapshot before the regular update supplied the latest statistics.
+
+### CHANGE
+
+- Added the `displayNeedsRedraw` flag in `display.cpp`.
+- `Display::activity()` now only wakes the OLED and marks it for a full redraw; it no longer draws from the stale cache.
+- The next `Display::update()` performs the full-screen redraw using the current arguments (the latest statistics snapshot collected after frame processing), refreshes all cached values, and clears the flag.
+- Normal incremental row updates and the 30-second sleep behavior are retained.
+- No Modbus processing, RTU transport, statistics semantics, pin assignments, or external libraries were changed.
+
+### SOURCE REVIEW
+
+- Fresh GitHub source fetched before editing: PASS.
+- `display.cpp` committed and fetched back; the wake path no longer redraws cached data: PASS.
+- `PROJECT.md` updated and fetched back: PASS.
+- No external library was modified.
+
+### TEST
+
+- GitHub source update and post-write verification: PASS.
+- Arduino Nano compilation: NOT RUN.
+- OLED sleep/wake hardware test: NOT RUN.
+- Modbus regression: NOT RUN after this display-only correction.
+
+### ACCEPTANCE TEST
+
+1. Power on and confirm initial counters are zero.
+2. Leave the device without Modbus receive events for more than 30 seconds; confirm the OLED enters power-save.
+3. Send one valid request to Slave ID 1. The OLED must wake and show RX=1 and TX=1 (ERR=0, MISS=0).
+4. Repeat after another sleep with one bad-CRC frame. The OLED must wake and show RX incremented by one and ERR incremented by one; TX must not increment.
+5. Confirm the next valid request is processed normally and the counters continue from their previous values rather than resetting.
+
+### NEXT STEP
+
+Compile and upload this revision. Run the wake acceptance test above before proceeding with any other display or UI work.
+
+### BLOCKERS
+
+This is a source-level correction only. Compilation and hardware behavior are not yet verified; no hardware PASS is claimed.
