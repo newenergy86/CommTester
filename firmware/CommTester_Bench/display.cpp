@@ -19,6 +19,7 @@ namespace {
   uint32_t displayedRx = 0;
   uint32_t displayedTx = 0;
   uint32_t displayedErrors = 0;
+  uint32_t missedCache = 0;
 
   // Always write a complete 16-character row. This also removes stale
   // characters when a newly formatted value is shorter than the old one.
