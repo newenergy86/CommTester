@@ -918,3 +918,34 @@ Upload this exact GitHub revision to the Nano. Verify direct Slave startup and t
 ### BLOCKERS
 
 Compilation is no longer a blocker. Hardware acceptance of the SERVICE-free baseline remains pending. SRAM headroom is 456 bytes; monitor stack usage during runtime testing before adding features.
+
+## CHECKPOINT-39 — SERVICE-free Modbus function regression PASS
+
+### FACT
+
+The user ran `modbus_test_all.py` against the Nano on COM7 with 9600 baud, 8N1, Slave ID 1. All reported tests passed:
+
+- FC01 — Read Coils.
+- FC02 — Read Discrete Inputs.
+- FC03 — Read Holding Registers at addresses 0 and 120.
+- FC04 — Read Input Registers at addresses 0 and 120.
+- FC05 — Write Single Coil, including read-back verification.
+- FC06 — Write Single Holding Register, including read-back verification.
+- FC15 — Write Multiple Coils, including read-back verification.
+- FC16 — Write Multiple Holding Registers, including read-back verification.
+
+The script summary reports OVERALL RESULT: PASS.
+
+This report does not show a deliberate invalid-CRC test, direct recovery-after-invalid-CRC test, or RX/TX/ERROR indicator verification. Those checks remain pending unless recorded separately.
+
+### DISPLAY OBSERVATION
+
+The user reports that the OLED visibly flickers on each poll because the complete screen is redrawn. Current `display.cpp` confirms that any changed display datum calls `drawSlaveScreen()`, which begins with `u8x8.clearDisplay()` and redraws all rows.
+
+### PROPOSED CHANGE
+
+Use incremental row updates: keep the full screen draw for initialization only, then redraw only rows whose displayed values changed. Preserve the U8X8 library and all Modbus/transport behavior.
+
+### NEXT STEP
+
+Implement the minimal display-only incremental refresh, then compile and verify that Modbus operation is unchanged and that routine counter updates no longer clear/redraw the entire OLED.
