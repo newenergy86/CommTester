@@ -16,15 +16,14 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - MCU: Arduino Nano / ATmega328P.
 - Physical interface: RS-232 through MAX238.
 - Serial transport: project-specific `ModbusRTU` layer and external `ModbusADU` dependency.
-- SERVICE: PING/PONG and diagnostic text commands.
-- Modbus: Slave only.
-- Indicators: RX/TX/ERROR/MODE LEDs, buzzer and mode button.
-- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). The user has flashed this build and reports that it currently operates without visible failures; a complete, measured hardware regression and worst-case SRAM assessment have not been recorded.
+- Modbus: Slave only; the Nano firmware starts directly in this mode.
+- RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
+- Indicators: RX/TX/ERROR LEDs and buzzer. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
+- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. Compilation and hardware regression after SERVICE removal are pending.
 
-### Current operating modes
+### Current operating mode
 
-- `SERVICE` — serial diagnostics, including PING → PONG.
-- `SLAVE` — responds to external Modbus RTU Master requests.
+- `SLAVE` — the only active Nano mode; the firmware starts directly and continuously in Modbus Slave.
 
 ### Features deferred on Nano
 
@@ -80,7 +79,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8X8_SSD1306_128X64_NONAME_HW_I2C` (text-only mode).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems. The integrated U8X8 text-mode firmware has also been flashed; the user reports no visible failures so far, but a complete display-enabled regression is not recorded.
-- The SERVICE screen retains its existing status information. The SLAVE screen is being extended to show the local Slave ID, the destination ID from the latest valid RTU frame (labelled `Master` on the display), the last function code, RX/TX counters on one row, response rate, missed responses, and `9600 8N1`. The two addresses share one row as `SLV:01 MST:01` (three-digit addresses are also supported); RX/TX counters share another row. Counters remain 32-bit; RX/TX values above 9999 use compact k/M/G notation to fit on one row, while MISS is displayed as a full decimal value. The previous statistics firmware compiled successfully at Flash 17,706 bytes and global SRAM 1,568 bytes; the updated screen/API build still requires compilation and hardware acceptance testing.
+- The Slave screen shows the local Slave ID, the destination ID from the latest valid RTU frame (labelled `MST`), the last function code, RX/TX counters on one row, response rate, missed responses, and current serial settings (`9600 8N1`). The two addresses share one row as `SLV:01 MST:01` (three-digit addresses are also supported); RX/TX counters share another row. Counters remain 32-bit; RX/TX values above 9999 use compact k/M/G notation to fit on one row, while MISS is displayed as a full decimal value. The previously reported statistics build compiled at Flash 17,706 bytes and global SRAM 1,568 bytes. The SERVICE-free source revision has not yet been compiled.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -115,7 +114,7 @@ In particular:
 
 ### CURRENT STATE
 
-The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested Slave implementation is retained. Modbus Master source files have been removed from the active sketch directory.
+The Nano firmware source has been simplified to a single Modbus SLAVE operating mode. SERVICE command handling and mode switching have been removed. The Modbus Slave processing implementation is retained; its RS-232 dependency has been separated into `rs232_port`.
 
 ### COMPLETED
 
@@ -125,12 +124,12 @@ The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested
 - CRC acceptance/rejection test passed.
 - Inter-byte gap and t1.5 boundary tests performed.
 - Master removed from the active Nano firmware scope.
-- SERVICE ↔ SLAVE mode cycle retained.
+- SERVICE mode and its command parser removed from the active Nano firmware; direct Slave startup implemented in source.
 
 ### DECISIONS
 
 - Keep the Nano prototype and its verified Slave implementation.
-- Keep SERVICE with PING/PONG.
+- Keep the Nano prototype Slave-only; SERVICE remains in the long-term feature scope for a future MCU revision.
 - Defer Modbus Master on Nano; restore it for the future upgraded-MCU revision.
 - Do not modify the external `ModbusADU` library.
 - Use SSD1306 OLED 128×64 with U8X8 text-only mode from the existing U8g2 package over hardware I²C; retain LCD 1602A only as a fallback.
@@ -148,7 +147,7 @@ The Nano firmware source has been reduced to SERVICE and SLAVE modes. The tested
 
 ### NEXT STEP
 
-Compile the updated OLED display build, then upload it and verify Slave ID, last request destination/function, RX/TX, RATE, MISS and serial format. Follow with the statistics acceptance test for addressed requests, foreign IDs, Broadcast and invalid CRC.
+Compile the SERVICE-free Nano firmware and record Flash/SRAM usage. If compilation passes, upload and verify direct Slave startup, OLED status display, and the existing Modbus regression suite. Only after this baseline is accepted, implement encoder input and runtime settings.
 
 ### BLOCKERS
 
