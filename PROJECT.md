@@ -79,7 +79,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8X8_SSD1306_128X64_NONAME_HW_I2C` (text-only mode).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems. The integrated U8X8 text-mode firmware has also been flashed; the user reports no visible failures so far, but a complete display-enabled regression is not recorded.
-- The Slave screen shows the local Slave ID, the destination ID from the latest valid RTU frame (labelled `MST`), the last function code, RX/TX counters on one row, response rate, missed responses, and current serial settings (`9600 8N1`). The two addresses share one row as `SLV:01 MST:01` (three-digit addresses are also supported); RX/TX counters share another row. Counters remain 32-bit; RX/TX values above 9999 use compact k/M/G notation to fit on one row, while MISS is displayed as a full decimal value. The previously reported statistics build compiled at Flash 17,706 bytes and global SRAM 1,568 bytes. The SERVICE-free source revision has not yet been compiled.
+- The Slave screen shows the local Slave ID, the destination ID from the latest valid RTU frame (labelled `MST`), the last function code, RX/TX counters on one row, response rate, missed responses, and current serial settings (`9600 8N1`). The two addresses share one row as `SLV:01 MST:01` (three-digit addresses are also supported); RX/TX counters share another row. Counters remain 32-bit; RX/TX values above 9999 use compact k/M/G notation to fit on one row, while MISS is displayed as a full decimal value. The previous statistics build used Flash 17,706 bytes and global SRAM 1,568 bytes. The SERVICE-free source now compiles successfully at Flash 16,962 bytes (55%) and global SRAM 1,592 bytes (77%), leaving 456 bytes. Relative to the previous report, Flash decreased by 744 bytes and global SRAM increased by 24 bytes; treat this comparison as exact only if the toolchain and library versions are unchanged.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -114,7 +114,7 @@ In particular:
 
 ### CURRENT STATE
 
-The Nano firmware source has been simplified to a single Modbus SLAVE operating mode. SERVICE command handling and mode switching have been removed. The Modbus Slave processing implementation is retained; its RS-232 dependency has been separated into `rs232_port`.
+The Nano firmware source has been simplified to a single Modbus SLAVE operating mode. SERVICE command handling and mode switching have been removed. The Modbus Slave processing implementation is retained; its RS-232 dependency has been separated into `rs232_port`. The SERVICE-free firmware compiles successfully for Arduino Nano / ATmega328P: Flash 16,962 bytes (55%), global SRAM 1,592 bytes (77%), leaving 456 bytes.
 
 ### COMPLETED
 
@@ -125,6 +125,7 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 - Inter-byte gap and t1.5 boundary tests performed.
 - Master removed from the active Nano firmware scope.
 - SERVICE mode and its command parser removed from the active Nano firmware; direct Slave startup implemented in source.
+- SERVICE-free Nano firmware compilation passed; Flash/SRAM usage recorded in CHECKPOINT-38.
 
 ### DECISIONS
 
@@ -137,8 +138,7 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 
 ### OPEN QUESTIONS
 
-- Actual Flash/SRAM usage after SERVICE removal.
-- Compile the current SERVICE-free source and compare its memory report with the prior 17,706-byte Flash / 1,568-byte SRAM report (toolchain and library versions must match).
+- Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
 - Verify the Slave-only OLED screen on hardware.
 - Run the full Modbus Slave regression after SERVICE removal, including all eight function codes and invalid-CRC rejection/recovery.
 - Encoder hardware and input handling are not implemented yet.
@@ -146,8 +146,8 @@ The Nano firmware source has been simplified to a single Modbus SLAVE operating 
 
 ### NEXT STEP
 
-Compile the SERVICE-free Nano firmware and record Flash/SRAM usage. If compilation passes, upload and verify direct Slave startup, OLED status display, and the existing Modbus regression suite. Only after this baseline is accepted, implement encoder input and runtime settings.
+Upload the compiled SERVICE-free Nano firmware and verify direct Slave startup, OLED status display, the existing Modbus regression suite, and RX/TX/ERROR indication. Only after this hardware baseline is accepted, implement encoder input and runtime settings.
 
 ### BLOCKERS
 
-The SERVICE-free source has not yet been compiled or tested on hardware. The next gate is compile and memory measurement, followed by OLED and Modbus regression.
+Compilation and memory measurement passed. Hardware acceptance remains pending: direct Slave startup, OLED rendering, Modbus regression and RX/TX/ERROR indication. SRAM headroom is 456 bytes, so stack usage must be considered before adding features.
