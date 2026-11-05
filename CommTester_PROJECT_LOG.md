@@ -764,3 +764,46 @@ Upload the compiled firmware and run the hardware acceptance test above. Report 
 
 No compile blocker. Runtime display behavior, counter semantics on hardware and regression of existing SERVICE/SLAVE functionality remain to be verified.
 
+## CHECKPOINT-35 — Expanded Modbus status screen implemented in source (verification pending)
+
+### CHANGE
+
+- Reworked the SLAVE OLED layout to show:
+  - local address as `Slave:01`;
+  - destination address from the latest valid RTU frame as `Master:01`;
+  - last function code with a short operation label;
+  - RX and TX counters on one row;
+  - RATE and MISS on separate rows;
+  - serial settings `9600 8N1`.
+- Preserved the existing SERVICE screen.
+- Updated the Modbus display-data API to provide the local Slave ID, last valid frame destination ID and function code, plus the existing counters.
+- The last destination ID/function are updated for any successfully received frame with valid CRC, including frames addressed to a different Slave ID. Transport errors and invalid-CRC frames do not replace the displayed last-frame information.
+- The RX/TX row uses compact k/M/G notation for counts above 9999 so both values fit within the OLED's 16 text columns. MISS remains a full decimal count.
+- No external libraries, Modbus function processing, register maps or serial settings were changed.
+
+### DISPLAY SEMANTICS
+
+- The display label `Master` means the destination Slave address contained in the Master-originated request. Modbus RTU does not carry a separate Master station ID in the request frame.
+- The local Slave ID is shown separately and remains 01 in the current firmware.
+- A valid request to a foreign ID updates the displayed destination/function but does not increment this device's RX/TX statistics.
+
+### TEST
+
+- Current GitHub source was fetched before editing: PASS.
+- Source edits and API integration: committed; post-update fetch verification pending.
+- Arduino Nano compile: NOT RUN.
+- OLED hardware rendering: NOT RUN.
+- Modbus statistics hardware acceptance: NOT RUN.
+
+### NEXT STEP
+
+Compile the current GitHub firmware for Arduino Nano and report Flash/SRAM figures. If compilation passes, upload and verify the screen with:
+1. No received frames: `Master:--`, `FC:--`, RX=0, TX=0, RATE=--.-%, MISS=0.
+2. Valid FC03 request to ID 01: `Master:01`, `FC:03 READ HR`; RX/TX increment.
+3. Valid FC04 request to ID 01: function line changes to `FC:04 READ IR`.
+4. Valid frame to a foreign ID: destination/function update, but RX/TX statistics remain unchanged.
+5. Invalid-CRC frame: last valid destination/function and statistics remain unchanged.
+
+### BLOCKERS
+
+The new layout/API has not yet been compiled or tested on hardware. No hardware PASS is claimed.
