@@ -289,7 +289,7 @@ void Display::begin() {
   // The only full-screen draw: initial display setup.
   drawSlaveScreen(displayedSlaveId, displayedMasterId,
                   displayedFunctionCode, displayedRx,
-                  displayedTx, displayedErrors);
+                  displayedTx, displayedErrors, missedCache);
 }
 
 void Display::activity() {
@@ -306,7 +306,7 @@ void Display::activity() {
     // Restore the latest cached screen after waking.
     drawSlaveScreen(displayedSlaveId, displayedMasterId,
                     displayedFunctionCode, displayedRx,
-                    displayedTx, displayedErrors);
+                    displayedTx, displayedErrors, missedCache);
   }
 }
 
