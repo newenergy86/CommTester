@@ -1032,3 +1032,69 @@ Compile and upload this revision. Verify RATE formatting, sleep after 30 seconds
 ### BLOCKERS
 
 Compilation and hardware behavior remain unverified. Do not proceed to encoder implementation until this change is accepted.
+
+
+---
+
+## CHECKPOINT-42 — RX/TX/ERR statistics and malformed PDU rejection implemented (verification pending)
+
+### CHANGE
+
+- Replaced the previous request/response statistics with:
+  - `RX`: every non-timeout receive event, including CRC errors, RTU framing errors, valid foreign-ID frames and malformed requests.
+  - `TX`: responses successfully passed through the existing `writeAdu()` path.
+  - `RATE`: `TX / RX × 100%`.
+  - `ERR`: RTU CRC errors, RTU framing errors and malformed request lengths for supported function codes.
+  - `MISS`: displayed as `---` in Slave mode; reserved for future Master response timeouts.
+- A valid frame addressed to another Slave increments RX but does not increment TX or ERR.
+- Valid Modbus requests that produce exception responses (e.g. unsupported function or illegal data address) are still valid protocol exchanges and do not increment ERR.
+- OLED layout uses the previously unused row 2 for ERR. RX/TX remain on row 4, RATE on row 5, MISS on row 6, and serial settings on row 7.
+- Added request-length validation before calling `ModbusSlaveLogic::processPdu()`:
+  - FC01–FC06 require exactly 8 RTU bytes including CRC.
+  - FC15/FC16 require at least 9 bytes and exact agreement between RTU length and the byte-count field.
+  - Unknown function codes remain eligible for an Illegal Function exception when the RTU frame has the minimum 4 bytes.
+- Updated the project-owned RTU transport to preserve received length on CRC/framing errors and reject frames shorter than 4 bytes before calling the external `ModbusADU::crcGood()`.
+- No external library was modified.
+
+### DECISIONS
+
+- RX means received RTU frame/event, not only a valid request addressed to this Slave.
+- ERR is limited to CRC, RTU framing and malformed supported-function request length. Modbus exception responses are not transport/frame errors.
+- MISS cannot be measured in Slave mode and is displayed as `---`.
+- RATE is an observed response ratio over all received events; it can be below 100% because foreign IDs and invalid frames are included in RX.
+
+### SOURCE REVIEW
+
+- Fresh GitHub source fetched before edits: PASS.
+- Updated source fetched back from GitHub: PASS.
+- Display API, main sketch and Slave statistics API signatures were updated together.
+- Short RTU frames are rejected before CRC validation; frame length is preserved for diagnostics.
+- External `ModbusADU` and U8g2 libraries were not changed.
+
+### TEST
+
+- GitHub source updates and post-write fetch verification: PASS.
+- Arduino Nano compilation: NOT RUN.
+- Flash/SRAM usage: NOT AVAILABLE.
+- OLED rendering of ERR and `MISS:---`: NOT RUN.
+- Hardware RX/TX/ERR/RATE accounting: NOT RUN.
+- FC01/02/03/04/05/06/15/16 regression after these changes: NOT RUN.
+
+### ACCEPTANCE TEST
+
+1. 10 valid requests to Slave ID 1: RX=10, TX=10, ERR=0, RATE=100.0%.
+2. 5 valid requests plus 5 bad-CRC frames: RX=10, TX=5, ERR=5, RATE=50.0%; no response to bad CRC.
+3. 5 valid requests plus 5 valid frames for another Slave ID: RX=10, TX=5, ERR=0, RATE=50.0%.
+4. One short FC03 request with valid CRC: RX increments by 1, ERR increments by 1, TX does not change; no response.
+5. Unknown function code and valid request with illegal register address: exception response is sent; RX and TX increment; ERR does not increment.
+6. A valid FC03 request immediately after each error case receives a normal response.
+7. OLED continues sleeping/waking as before; ERR updates incrementally without screen flicker.
+8. Existing FC01/02/03/04/05/06/15/16 regression passes.
+
+### NEXT STEP
+
+Compile the latest GitHub revision for Arduino Nano / ATmega328P and report compiler output, Flash and SRAM. If compilation passes, upload and run the acceptance tests above.
+
+### BLOCKERS
+
+All changes are source-level only. No compile or hardware PASS is claimed. The previous compile figures (16,962 bytes Flash / 1,592 bytes global SRAM) predate this revision.
