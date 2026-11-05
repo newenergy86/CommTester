@@ -262,7 +262,7 @@ namespace {
     drawRow(0, "CommTester v0.4");
 
     drawAddressPair(slaveId, masterId);
-    drawErrors(errors);
+    drawErrorMissed(errors, missed);
     drawFunction(functionCode);
     drawTraffic(rx, tx);
     drawRate(rx, tx);
