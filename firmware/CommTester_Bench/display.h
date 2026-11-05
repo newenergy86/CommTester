@@ -7,7 +7,8 @@
 namespace Display {
 
   void begin();
-  void update(IndicatorMode mode, uint32_t requests, uint32_t responses);
+  void update(IndicatorMode mode, uint8_t slaveId, uint8_t masterId,
+              uint8_t functionCode, uint32_t requests, uint32_t responses);
 
 }
 
