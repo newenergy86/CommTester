@@ -8,7 +8,6 @@ U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE);
 namespace {
 
   bool displayReady = false;
-  IndicatorMode displayedMode = IND_SERVICE;
   uint8_t displayedSlaveId = 0;
   uint8_t displayedMasterId = 0xFF;
   uint8_t displayedFunctionCode = 0;
@@ -209,22 +208,6 @@ namespace {
     u8x8.drawString(0, 7, "9600 8N1");
   }
 
-  void drawScreen(IndicatorMode mode, uint8_t slaveId, uint8_t masterId,
-                  uint8_t functionCode,
-                  uint32_t requests, uint32_t responses) {
-    if (mode == IND_SLAVE) {
-      drawSlaveScreen(slaveId, masterId, functionCode, requests, responses);
-      return;
-    }
-
-    u8x8.clearDisplay();
-    u8x8.drawString(0, 0, "CommTester v0.4");
-    u8x8.drawString(0, 1, "MODE: SERVICE");
-    u8x8.drawString(0, 2, "RS232: 9600");
-    u8x8.drawString(0, 3, "FORMAT: 8N1");
-    u8x8.drawString(0, 4, "SLAVE ID: 1");
-    u8x8.drawString(0, 5, "HOLD BTN: 2s");
-  }
 
 }
 
@@ -233,39 +216,35 @@ void Display::begin() {
   u8x8.setFont(u8x8_font_chroma48medium8_r);
 
   displayReady = true;
-  displayedMode = IND_SERVICE;
   displayedSlaveId = 0;
   displayedMasterId = 0xFF;
   displayedFunctionCode = 0;
   displayedRequests = 0;
   displayedResponses = 0;
 
-  drawScreen(displayedMode, 1, 0xFF, 0, 0, 0);
+  drawSlaveScreen(1, 0xFF, 0, 0, 0);
 }
 
-void Display::update(IndicatorMode mode, uint8_t slaveId, uint8_t masterId,
+void Display::update(uint8_t slaveId, uint8_t masterId,
                      uint8_t functionCode,
                      uint32_t requests, uint32_t responses) {
   if (!displayReady) {
     return;
   }
 
-  if (mode == displayedMode &&
-      (mode != IND_SLAVE ||
-       (slaveId == displayedSlaveId &&
-        masterId == displayedMasterId &&
-        functionCode == displayedFunctionCode &&
-        requests == displayedRequests &&
-        responses == displayedResponses))) {
+  if (slaveId == displayedSlaveId &&
+      masterId == displayedMasterId &&
+      functionCode == displayedFunctionCode &&
+      requests == displayedRequests &&
+      responses == displayedResponses) {
     return;
   }
 
-  displayedMode = mode;
   displayedSlaveId = slaveId;
   displayedMasterId = masterId;
   displayedFunctionCode = functionCode;
   displayedRequests = requests;
   displayedResponses = responses;
 
-  drawScreen(mode, slaveId, masterId, functionCode, requests, responses);
+  drawSlaveScreen(slaveId, masterId, functionCode, requests, responses);
 }
