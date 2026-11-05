@@ -266,7 +266,6 @@ namespace {
     drawFunction(functionCode);
     drawTraffic(rx, tx);
     drawRate(rx, tx);
-    drawMissed();
     drawRow(7, "9600 8N1");
   }
 
