@@ -27,6 +27,8 @@ namespace ModbusSlave {
 
   uint32_t requestCount = 0;
   uint32_t responseCount = 0;
+  uint8_t lastRequestId = 0xFF;
+  uint8_t lastFunctionCode = 0;
 
 
   // ------------------------------------------
@@ -86,6 +88,8 @@ namespace ModbusSlave {
 
     requestCount = 0;
     responseCount = 0;
+    lastRequestId = 0xFF;
+    lastFunctionCode = 0;
 
     // ----------------------------------------
     // TEST HOLDING REGISTERS
@@ -259,7 +263,12 @@ namespace ModbusSlave {
   // STATISTICS
   // ==========================================
 
-  void getStatistics(uint32_t &requests, uint32_t &responses) {
+  void getDisplayData(uint8_t &slaveId, uint8_t &requestId,
+                      uint8_t &functionCode,
+                      uint32_t &requests, uint32_t &responses) {
+    slaveId = SLAVE_ID;
+    requestId = lastRequestId;
+    functionCode = lastFunctionCode;
     requests = requestCount;
     responses = responseCount;
   }
@@ -384,6 +393,11 @@ namespace ModbusSlave {
       return;
     }
 
+
+    // Keep the latest valid frame visible, including requests for other IDs.
+    // The displayed Master ID is the destination address carried in the request.
+    lastRequestId = adu.getUnitId();
+    lastFunctionCode = adu.getFunctionCode();
 
     Indicators::rx();
 
