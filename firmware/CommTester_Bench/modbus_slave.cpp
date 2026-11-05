@@ -361,11 +361,21 @@ namespace ModbusSlave {
 
 
     Serial.print(F("ID: "));
-    Serial.println(adu.getUnitId());
+    if (adu.getRtuLen() >= 1) {
+      Serial.println(adu.getUnitId());
+    }
+    else {
+      Serial.println(F("N/A"));
+    }
 
 
     Serial.print(F("Function: "));
-    Serial.println(adu.getFunctionCode());
+    if (adu.getRtuLen() >= 2) {
+      Serial.println(adu.getFunctionCode());
+    }
+    else {
+      Serial.println(F("N/A"));
+    }
 
 
     Serial.print(F("CRC: "));
