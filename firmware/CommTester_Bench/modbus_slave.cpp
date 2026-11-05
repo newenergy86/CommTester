@@ -1,4 +1,5 @@
 #include "modbus_slave.h"
+#include "display.h"
 #include "rs232_port.h"
 #include "indicators.h"
 #include "modbus_rtu.h"
@@ -302,6 +303,9 @@ namespace ModbusSlave {
     if (error == MODBUS_RTU_TIMEOUT) {
       return;
     }
+
+    // Any completed or malformed receive event wakes the OLED.
+    Display::activity();
 
 
     // ----------------------------------------
