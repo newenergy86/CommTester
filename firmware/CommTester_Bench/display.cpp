@@ -97,15 +97,19 @@ namespace {
   }
 
   void drawFunction(uint8_t functionCode) {
-    char line[17] = "FC:00 UNKNOWN";
+    char line[17] = "FC:";
+    uint8_t pos = 3;
 
     if (functionCode == 0) {
       u8x8.drawString(0, 3, "FC:--");
       return;
     }
 
-    line[3] = '0' + (functionCode / 10);
-    line[4] = '0' + (functionCode % 10);
+    if (functionCode < 10) {
+      line[pos++] = '0';
+    }
+    appendUnsigned(line, pos, functionCode);
+    line[pos++] = ' ';
 
     const char *description = "UNKNOWN";
 
@@ -119,9 +123,6 @@ namespace {
       case 15: description = "WRITE COIL"; break;
       case 16: description = "WRITE HR";   break;
     }
-
-    line[5] = ' ';
-    uint8_t pos = 6;
 
     while (*description != '\0' && pos < 16) {
       line[pos++] = *description++;
