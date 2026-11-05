@@ -12,6 +12,7 @@ namespace {
 
   bool displayReady = false;
   bool displaySleeping = false;
+  bool displayNeedsRedraw = false;
   unsigned long lastActivityTime = 0;
   uint8_t displayedSlaveId = 1;
   uint8_t displayedMasterId = 0xFF;
@@ -278,6 +279,7 @@ void Display::begin() {
 
   displayReady = true;
   displaySleeping = false;
+  displayNeedsRedraw = false;
   lastActivityTime = millis();
   displayedSlaveId = 1;
   displayedMasterId = 0xFF;
@@ -303,10 +305,8 @@ void Display::activity() {
     u8x8.setPowerSave(0);
     displaySleeping = false;
 
-    // Restore the latest cached screen after waking.
-    drawSlaveScreen(displayedSlaveId, displayedMasterId,
-                    displayedFunctionCode, displayedRx,
-                    displayedTx, displayedErrors, missedCache);
+    // The next update() will redraw from the newest live statistics.
+    displayNeedsRedraw = true;
   }
 }
 
@@ -335,6 +335,23 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     displayedTx = tx;
     displayedErrors = errors;
     missedCache = missed;
+    return;
+  }
+
+  // Wake-up is requested from the receive path. Redraw only here, using
+  // the complete statistics snapshot collected after frame processing.
+  if (displayNeedsRedraw) {
+    drawSlaveScreen(slaveId, masterId, functionCode,
+                    rx, tx, errors, missed);
+
+    displayedSlaveId = slaveId;
+    displayedMasterId = masterId;
+    displayedFunctionCode = functionCode;
+    displayedRx = rx;
+    displayedTx = tx;
+    displayedErrors = errors;
+    missedCache = missed;
+    displayNeedsRedraw = false;
     return;
   }
 
