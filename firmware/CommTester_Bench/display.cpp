@@ -203,10 +203,21 @@ namespace {
       }
 
       uint16_t wholePercent = rateTenths / 10;
-      rateText[5] = (wholePercent >= 100) ? '1' :
-                    (wholePercent >= 10) ? ('0' + wholePercent / 10) : ' ';
-      rateText[6] = (wholePercent >= 10) ? ('0' + (wholePercent / 10) % 10) : ' ';
-      rateText[7] = '0' + (wholePercent % 10);
+      if (wholePercent >= 100) {
+        rateText[5] = '1';
+        rateText[6] = '0';
+        rateText[7] = '0';
+      }
+      else if (wholePercent >= 10) {
+        rateText[5] = ' ';
+        rateText[6] = '0' + (wholePercent / 10);
+        rateText[7] = '0' + (wholePercent % 10);
+      }
+      else {
+        rateText[5] = ' ';
+        rateText[6] = ' ';
+        rateText[7] = '0' + wholePercent;
+      }
       rateText[8] = '.';
       rateText[9] = '0' + (rateTenths % 10);
     }
