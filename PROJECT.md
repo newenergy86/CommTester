@@ -146,7 +146,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
 - Compile and verify RATE formatting, combined ERR/MISS row, 30-second OLED sleep/wake, and RX/TX/ERR/MISS accounting.
-- Correct `modbus_error_test.py` so a valid-CRC malformed FC03 request is expected to receive no response.
+- Review `modbus_error_test.py` test 05 and decide whether a valid-CRC malformed FC03 request should be discarded or answered with exception 03.
 - Run `modbus_test_all.py` after the latest statistics and PDU-length validation changes.
 - Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
 - Confirm RX/TX/ERROR indicator behavior.
