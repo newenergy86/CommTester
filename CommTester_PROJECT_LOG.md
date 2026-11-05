@@ -988,3 +988,47 @@ Compile and upload this revision. Verify that routine Modbus polling no longer c
 ### BLOCKERS
 
 Hardware behavior and compilation remain unverified. Do not proceed to encoder implementation until this display change is accepted.
+
+## CHECKPOINT-41 — OLED RATE percent and automatic power-save source change (compile pending)
+
+### CHANGE
+
+- Fixed the RATE row formatting so the percent sign occupies its own character after the full `100.0` value. The no-statistics placeholder was widened to match the same five-character numeric field.
+- Added a 30-second inactivity timeout in `display.cpp`.
+- Added `Display::activity()`. It resets the inactivity timer and wakes the display with `u8x8.setPowerSave(0)` when asleep.
+- The display enters power-save mode with `u8x8.setPowerSave(1)` after 30 seconds without a receive event.
+- `ModbusSlave::update()` calls `Display::activity()` for every non-timeout receive result, before checking framing/CRC status. Thus valid frames, foreign-address frames, CRC errors and other reported receive errors wake the OLED. A pure receive timeout does not.
+- While asleep, `Display::update()` continues refreshing the cached status values without writing to the OLED. On wake, the screen is redrawn from the latest cached values; subsequent changes use incremental row refresh.
+- U8X8 `setPowerSave()` is an existing API of the installed U8g2/U8x8 library; no external library was changed.
+
+### DECISION
+
+- OLED inactivity timeout: 30 seconds.
+- Only the OLED enters power-save mode. The Nano and Modbus Slave continue running.
+- Any non-timeout Modbus receive event wakes the display, including malformed/CRC-invalid receive events.
+
+### SOURCE REVIEW
+
+- Fresh GitHub source fetched before editing: PASS.
+- Updated `display.cpp`, `display.h`, and `modbus_slave.cpp` fetched after edits: PASS.
+- The percent sign is explicitly written at the character after the five-character RATE value.
+- Sleep/wake uses U8X8 `setPowerSave(1/0)`.
+- Display activity is called after the receive timeout check and before frame/error validation.
+- No changes to Modbus PDU handling, CRC algorithm, RTU timing, serial settings, register maps, indicators or external libraries.
+
+### TEST
+
+- Source changes: committed.
+- Arduino Nano compile: NOT YET RUN.
+- RATE rendering at no requests and at 100.0%: NOT YET RUN on hardware.
+- OLED sleep after 30 seconds: NOT YET RUN.
+- Wake on valid frame, foreign-ID frame and invalid-CRC/error receive: NOT YET RUN.
+- Modbus regression after this change: NOT YET RUN.
+
+### NEXT STEP
+
+Compile and upload this revision. Verify RATE formatting, sleep after 30 seconds without a receive event, wake on a valid request and on an invalid-CRC/error receive event, and confirm Modbus responses continue while the OLED is asleep.
+
+### BLOCKERS
+
+Compilation and hardware behavior remain unverified. Do not proceed to encoder implementation until this change is accepted.
