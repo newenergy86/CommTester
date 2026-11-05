@@ -228,16 +228,30 @@ namespace {
     drawRow(5, rateText);
   }
 
-  void drawErrors(uint32_t errors) {
-    char errorText[17] = "ERR:";
+  void drawErrorMissed(uint32_t errors, uint32_t missed) {
+    char errorText[5];
+    char missedText[5];
+    char line[17] = "ERR:";
     uint8_t pos = 4;
 
-    formatCompactCounter(errorText + pos, errors);
-    drawRow(2, errorText);
-  }
+    formatCompactCounter(errorText, errors);
+    formatCompactCounter(missedText, missed);
 
-  void drawMissed() {
-    drawRow(6, "MISS:---");
+    for (uint8_t i = 0; errorText[i] != 0 && pos < 16; i++) {
+      line[pos++] = errorText[i];
+    }
+    line[pos++] = ' ';
+    line[pos++] = 'M';
+    line[pos++] = 'I';
+    line[pos++] = 'S';
+    line[pos++] = 'S';
+    line[pos++] = ':';
+
+    for (uint8_t i = 0; missedText[i] != 0 && pos < 16; i++) {
+      line[pos++] = missedText[i];
+    }
+    line[pos] = 0;
+    drawRow(2, line);
   }
 
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
