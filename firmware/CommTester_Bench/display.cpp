@@ -131,29 +131,43 @@ namespace {
     u8x8.drawString(0, 3, line);
   }
 
+  void drawAddress(uint8_t row, const char *label, uint8_t address) {
+    char line[17];
+    uint8_t pos = 0;
+
+    while (*label != '\0' && pos < 12) {
+      line[pos++] = *label++;
+    }
+
+    line[pos++] = ':';
+
+    if (address >= 100) {
+      line[pos++] = '0' + (address / 100);
+      line[pos++] = '0' + ((address / 10) % 10);
+      line[pos++] = '0' + (address % 10);
+    }
+    else {
+      line[pos++] = '0' + (address / 10);
+      line[pos++] = '0' + (address % 10);
+    }
+
+    line[pos] = '\0';
+    u8x8.drawString(0, row, line);
+  }
+
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
                        uint8_t functionCode,
                        uint32_t requests, uint32_t responses) {
-    char line[17];
-
     u8x8.clearDisplay();
     u8x8.drawString(0, 0, "CommTester v0.4");
 
-    line[0] = 'S'; line[1] = 'l'; line[2] = 'a'; line[3] = 'v';
-    line[4] = 'e'; line[5] = ':'; line[6] = '0' + (slaveId / 10);
-    line[7] = '0' + (slaveId % 10); line[8] = '\0';
-    u8x8.drawString(0, 1, line);
+    drawAddress(1, "Slave", slaveId);
 
     if (masterId == 0xFF) {
       u8x8.drawString(0, 2, "Master:--");
     }
     else {
-      line[0] = 'M'; line[1] = 'a'; line[2] = 's'; line[3] = 't';
-      line[4] = 'e'; line[5] = 'r'; line[6] = ':';
-      line[7] = '0' + (masterId / 10);
-      line[8] = '0' + (masterId % 10);
-      line[9] = '\0';
-      u8x8.drawString(0, 2, line);
+      drawAddress(2, "Master", masterId);
     }
 
     drawFunction(functionCode);
