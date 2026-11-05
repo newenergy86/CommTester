@@ -29,13 +29,14 @@ void loop() {
   uint32_t rx = 0;
   uint32_t tx = 0;
   uint32_t errors = 0;
+  uint32_t missed = 0;
 
   ModbusSlave::getDisplayData(
-    slaveId, masterId, functionCode, rx, tx, errors
+    slaveId, masterId, functionCode, rx, tx, errors, missed
   );
 
   Display::update(
-    slaveId, masterId, functionCode, rx, tx, errors
+    slaveId, masterId, functionCode, rx, tx, errors, missed
   );
 
   ModbusSlave::update();
