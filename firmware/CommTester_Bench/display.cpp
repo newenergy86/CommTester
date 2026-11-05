@@ -16,8 +16,9 @@ namespace {
   uint8_t displayedSlaveId = 1;
   uint8_t displayedMasterId = 0xFF;
   uint8_t displayedFunctionCode = 0;
-  uint32_t displayedRequests = 0;
-  uint32_t displayedResponses = 0;
+  uint32_t displayedRx = 0;
+  uint32_t displayedTx = 0;
+  uint32_t displayedErrors = 0;
 
   // Always write a complete 16-character row. This also removes stale
   // characters when a newly formatted value is shorter than the old one.
@@ -216,27 +217,31 @@ namespace {
     drawRow(5, rateText);
   }
 
-  void drawMissed(uint32_t requests, uint32_t responses) {
-    uint32_t missed = (requests >= responses) ?
-                      (requests - responses) : 0;
-    char missText[17] = "MISS:";
-    uint8_t missPos = 5;
+  void drawErrors(uint32_t errors) {
+    char errorText[17] = "ERR:";
+    uint8_t pos = 4;
 
-    appendUnsigned(missText, missPos, missed);
-    drawRow(6, missText);
+    formatCompactCounter(errorText + pos, errors);
+    drawRow(2, errorText);
+  }
+
+  void drawMissed() {
+    drawRow(6, "MISS:---");
   }
 
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
                        uint8_t functionCode,
-                       uint32_t requests, uint32_t responses) {
+                       uint32_t rx, uint32_t tx,
+                       uint32_t errors) {
     u8x8.clearDisplay();
     drawRow(0, "CommTester v0.4");
 
     drawAddressPair(slaveId, masterId);
+    drawErrors(errors);
     drawFunction(functionCode);
-    drawTraffic(requests, responses);
-    drawRate(requests, responses);
-    drawMissed(requests, responses);
+    drawTraffic(rx, tx);
+    drawRate(rx, tx);
+    drawMissed();
     drawRow(7, "9600 8N1");
   }
 
@@ -252,13 +257,14 @@ void Display::begin() {
   displayedSlaveId = 1;
   displayedMasterId = 0xFF;
   displayedFunctionCode = 0;
-  displayedRequests = 0;
-  displayedResponses = 0;
+  displayedRx = 0;
+  displayedTx = 0;
+  displayedErrors = 0;
 
   // The only full-screen draw: initial display setup.
   drawSlaveScreen(displayedSlaveId, displayedMasterId,
-                  displayedFunctionCode, displayedRequests,
-                  displayedResponses);
+                  displayedFunctionCode, displayedRx,
+                  displayedTx, displayedErrors);
 }
 
 void Display::activity() {
@@ -274,14 +280,14 @@ void Display::activity() {
 
     // Restore the latest cached screen after waking.
     drawSlaveScreen(displayedSlaveId, displayedMasterId,
-                    displayedFunctionCode, displayedRequests,
-                    displayedResponses);
+                    displayedFunctionCode, displayedRx,
+                    displayedTx, displayedErrors);
   }
 }
 
 void Display::update(uint8_t slaveId, uint8_t masterId,
                      uint8_t functionCode,
-                     uint32_t requests, uint32_t responses) {
+                     uint32_t rx, uint32_t tx, uint32_t errors) {
   if (!displayReady) {
     return;
   }
@@ -291,15 +297,17 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   const bool functionChanged =
     (functionCode != displayedFunctionCode);
   const bool countersChanged =
-    (requests != displayedRequests) || (responses != displayedResponses);
+    (rx != displayedRx) || (tx != displayedTx) ||
+    (errors != displayedErrors);
 
   // Keep the cached data current while the physical display is asleep.
   if (displaySleeping) {
     displayedSlaveId = slaveId;
     displayedMasterId = masterId;
     displayedFunctionCode = functionCode;
-    displayedRequests = requests;
-    displayedResponses = responses;
+    displayedRx = rx;
+    displayedTx = tx;
+    displayedErrors = errors;
     return;
   }
 
@@ -312,16 +320,17 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   }
 
   if (countersChanged) {
-    drawTraffic(requests, responses);
-    drawRate(requests, responses);
-    drawMissed(requests, responses);
+    drawTraffic(rx, tx);
+    drawRate(rx, tx);
+    drawErrors(errors);
   }
 
   displayedSlaveId = slaveId;
   displayedMasterId = masterId;
   displayedFunctionCode = functionCode;
-  displayedRequests = requests;
-  displayedResponses = responses;
+  displayedRx = rx;
+  displayedTx = tx;
+  displayedErrors = errors;
 
   if (millis() - lastActivityTime >= DISPLAY_SLEEP_TIMEOUT) {
     u8x8.setPowerSave(1);
