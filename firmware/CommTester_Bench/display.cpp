@@ -132,16 +132,7 @@ namespace {
     u8x8.drawString(0, 3, line);
   }
 
-  void drawAddress(uint8_t row, const char *label, uint8_t address) {
-    char line[17];
-    uint8_t pos = 0;
-
-    while (*label != '\0' && pos < 12) {
-      line[pos++] = *label++;
-    }
-
-    line[pos++] = ':';
-
+  void appendAddress(char *line, uint8_t &pos, uint8_t address) {
     if (address >= 100) {
       line[pos++] = '0' + (address / 100);
       line[pos++] = '0' + ((address / 10) % 10);
@@ -151,9 +142,29 @@ namespace {
       line[pos++] = '0' + (address / 10);
       line[pos++] = '0' + (address % 10);
     }
+  }
+
+  void drawAddressPair(uint8_t slaveId, uint8_t masterId) {
+    char line[17] = "SLV:";
+    uint8_t pos = 4;
+
+    appendAddress(line, pos, slaveId);
+    line[pos++] = ' ';
+    line[pos++] = 'M';
+    line[pos++] = 'S';
+    line[pos++] = 'T';
+    line[pos++] = ':';
+
+    if (masterId == 0xFF) {
+      line[pos++] = '-';
+      line[pos++] = '-';
+    }
+    else {
+      appendAddress(line, pos, masterId);
+    }
 
     line[pos] = '\0';
-    u8x8.drawString(0, row, line);
+    u8x8.drawString(0, 1, line);
   }
 
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
@@ -162,14 +173,7 @@ namespace {
     u8x8.clearDisplay();
     u8x8.drawString(0, 0, "CommTester v0.4");
 
-    drawAddress(1, "Slave", slaveId);
-
-    if (masterId == 0xFF) {
-      u8x8.drawString(0, 2, "Master:--");
-    }
-    else {
-      drawAddress(2, "Master", masterId);
-    }
+    drawAddressPair(slaveId, masterId);
 
     drawFunction(functionCode);
     drawTraffic(requests, responses);
