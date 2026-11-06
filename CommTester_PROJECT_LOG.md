@@ -1398,8 +1398,11 @@ The reviewed current source files show no existing use of D5 in the other active
 ### TEST
 
 - GitHub source update and post-write fetch verification: PASS.
-- Arduino Nano compilation: NOT YET RUN.
-- Flash/SRAM measurement: NOT YET AVAILABLE.
+- Arduino Nano / ATmega328P compilation: **PASS**, user-reported.
+- Flash: **19,548 bytes (63% of 30,720 bytes)**.
+- Global SRAM: **1,624 bytes (79% of 2,048 bytes)**.
+- Remaining SRAM: **424 bytes**.
+- Compared with CHECKPOINT-46 build: +972 bytes Flash, +11 bytes global SRAM, and 11 fewer bytes remaining.
 - Startup flash/melody hardware check: NOT YET RUN.
 - 2-second heartbeat hardware check: NOT YET RUN.
 - RX/TX/ERROR sound arbitration during/after startup: NOT YET RUN.
@@ -1420,4 +1423,4 @@ Compile and upload this revision, then run the acceptance test above. Do not imp
 
 ### BLOCKERS
 
-Compilation and all hardware checks are pending. The 435-byte SRAM headroom from the previous build is limited; the new compile report is required before proceeding.
+Compilation is PASS. Startup melody, heartbeat timing, sound arbitration and Modbus/OLED regression hardware checks are still pending. SRAM headroom is 424 bytes and remains limited.
