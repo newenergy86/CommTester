@@ -18,6 +18,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Serial transport: project-specific `ModbusRTU` layer and external `ModbusADU` dependency.
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
+- Encoder input test: KY-040 on CLK=D8, DT=D9, SW=D7. Rotation is decoded in polling mode by the external KY040 library (codingABI, v1.0.3); the button uses a project-owned 30 ms debounce. The module currently reports direction and button transitions to USB Serial at 115200 baud. Hardware verification is pending.
 - Indicators: RX/TX/ERROR LEDs, D5 HEARTBEAT LED and buzzer. D5 startup triple-flash with a three-note melody and a 2-second heartbeat are implemented in source and compile successfully for Nano; hardware verification is pending. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
 - Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. After wake, the full redraw is deferred to the next `Display::update()` call so it uses the latest post-frame statistics rather than stale cached values. The eight-row layout and 120-second inactivity power-save/wake behavior have passed user-reported compile and hardware verification (CHECKPOINT-46).
 
@@ -144,6 +145,9 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### OPEN QUESTIONS
 
+- Compile and hardware-test the KY-040 encoder input module. Confirm one CW/CCW event per detent, debounced button press/release, and unchanged Modbus/OLED/indicator operation under normal and repeated Modbus traffic.
+- Confirm the KY040 1.0.3 library is installed in the Arduino build environment.
+
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
 - Review `modbus_error_test.py` test 05 and decide whether a valid-CRC malformed FC03 request should be discarded or answered with exception 03.
 - Run `modbus_test_all.py` after the latest statistics and PDU-length validation changes.
@@ -155,7 +159,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### NEXT STEP
 
-Review the current GitHub main sketch and active modules for D7/D8/D9 pin conflicts. Then implement the minimum encoder input test: direction, exactly one logical step per detent, and debounced button press/release. Preserve the verified Modbus, OLED and indicator baseline.
+Compile and upload the encoder input test. Verify direction, exactly one logical step per detent, debounced button press/release, then repeat the Modbus regression and OLED/indicator checks. Preserve the verified baseline.
 
 ### BLOCKERS
 
