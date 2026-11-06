@@ -1,4 +1,5 @@
 #include "encoder.h"
+#include "indicators.h"
 #include <KY040.h>
 
 // KY-040 connections:
@@ -35,8 +36,10 @@ void Encoder::update() {
 
   if (rotation == KY040::CLOCKWISE) {
     Serial.println(F("ENC: CW"));
+    Indicators::encoderStep();
   } else if (rotation == KY040::COUNTERCLOCKWISE) {
     Serial.println(F("ENC: CCW"));
+    Indicators::encoderStep();
   }
 
   const bool reading = digitalRead(ENCODER_SW);
@@ -53,6 +56,7 @@ void Encoder::update() {
 
     if (buttonStableState == LOW) {
       Serial.println(F("ENC: BUTTON PRESSED"));
+      Indicators::encoderPress();
     } else {
       Serial.println(F("ENC: BUTTON RELEASED"));
     }
