@@ -150,13 +150,13 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 - Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
 - Confirm RX/TX/ERROR indicator behavior.
 - Encoder hardware and input handling are not implemented yet; D7 is reserved for the encoder button, and D8/D9 are proposed for the quadrature channels pending source/pin-conflict review.
-- D5 startup melody and periodic HEARTBEAT compile successfully; hardware verification is pending. Latest user-reported build: 19,548 bytes Flash (63%), 1,624 bytes global SRAM (79%), 424 bytes remaining.
+- D5 startup melody and periodic HEARTBEAT compile successfully; hardware verification is pending. Latest user-reported build before OLED string optimization: 19,548 bytes Flash (63%), 1,624 bytes global SRAM (79%), 424 bytes remaining. CHECKPOINT-47B moves fixed OLED labels and function descriptions to AVR program Flash using PROGMEM; compilation and memory comparison are pending.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile and upload the D5 startup/heartbeat revision. Verify exactly three startup flashes with the three-note melody, then one 60 ms heartbeat flash every 2 seconds. Confirm RX/TX/ERROR sounds are not interrupted and Modbus/OLED behavior is unchanged. Only after this passes, proceed to encoder input handling on D8/D9 with the D7 button.
+Compile the CHECKPOINT-47B OLED PROGMEM optimization and compare Flash/SRAM against the pre-optimization build. If compilation passes, repeat the Modbus regression and OLED/indicator checks, including sustained test traffic. Diagnose SRAM stack headroom separately if the device still hangs. Do not begin encoder work until memory/runtime stability is restored.
 
 ### BLOCKERS
 
-SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The user confirmed that incremental OLED row refresh removed the observed flicker. The revised OLED layout, 120-second sleep/wake and normal Modbus operation have passed user-reported compile and hardware verification. D5 startup/heartbeat source changes are committed and compile successfully (19,548 bytes Flash, 1,624 bytes global SRAM, 424 bytes remaining); hardware behavior is not yet tested. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. The last accepted build left 435 bytes of SRAM; remeasure after the D5 change.
+SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The user confirmed that incremental OLED row refresh removed the observed flicker. The revised OLED layout, 120-second sleep/wake and normal Modbus operation have passed user-reported compile and hardware verification. D5 startup/heartbeat source changes are committed and compile successfully (19,548 bytes Flash, 1,624 bytes global SRAM, 424 bytes remaining); hardware behavior is not yet fully tested. CHECKPOINT-47B OLED PROGMEM optimization is committed, but compilation, memory savings and hardware regression are pending. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. The last accepted build left 435 bytes of SRAM; remeasure after the D5 change.
