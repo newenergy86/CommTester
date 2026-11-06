@@ -1739,3 +1739,44 @@ Verify exact CW/CCW event counts and stable button transitions, then run the com
 ### RESOURCE NOTE
 
 The compiler reports 542 bytes of remaining SRAM. This is compiler-reported free SRAM, not a measurement of worst-case runtime stack margin. Avoid unnecessary global buffers and large local variables.
+
+
+## CHECKPOINT-49B — Encoder detent count and active-traffic checks PASS
+
+### USER-REPORTED HARDWARE TEST — FACT
+
+The user performed the encoder acceptance checks and reported:
+
+- 20 clockwise detents produced exactly 20 `ENC: CW` messages.
+- 20 counter-clockwise detents produced exactly 20 `ENC: CCW` messages.
+- No opposite-direction events were observed during these counted tests.
+- Encoder rotation continued to be detected correctly while Modbus traffic was active.
+- Button press and release transitions were visible as `ENC: BUTTON PRESSED` and `ENC: BUTTON RELEASED`.
+- Encoder sound feedback remains operational (previously accepted in CHECKPOINT-49A).
+
+### ACCEPTANCE STATUS
+
+- Exact one-event-per-detent count in both directions, for the tested 20-detent runs: **PASS**.
+- Encoder polling during active Modbus traffic, for the reported test: **PASS**.
+- Button press/release event reporting: **PASS**.
+- Sound feedback: **PASS** (CHECKPOINT-49A).
+- Exhaustive button debounce/bounce stress test: **NOT YET CONFIRMED**.
+- Full FC01/02/03/04/05/06/15/16 regression after the encoder sound-feedback change: **PENDING**.
+- OLED refresh/sleep/wake and complete RX/TX/ERROR/HEARTBEAT regression after this change: **PENDING**.
+
+### DECISION
+
+- Accept the tested KY-040 polling implementation and its current sound feedback as the encoder input baseline.
+- Do not modify the encoder decoder or sound queue without a reproducible defect.
+- Do not add menu behavior until the remaining Modbus, OLED and indicator regression is complete.
+
+### NEXT STEP
+
+Run the full Modbus function regression (FC01/02/03/04/05/06/15/16), followed by OLED and indicator checks. Preserve the current firmware baseline.
+
+### STATUS
+
+- Encoder direction and tested detent counts: **PASS**.
+- Encoder operation during active Modbus traffic: **PASS**.
+- Button press/release reporting: **PASS**.
+- Full post-change regression: **PENDING**.
