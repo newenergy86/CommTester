@@ -1266,3 +1266,55 @@ Compile and upload the latest GitHub revision, then perform the OLED layout and 
 ### BLOCKERS
 
 Source-level implementation only. No compile or hardware PASS is claimed.
+
+
+---
+
+## CHECKPOINT-46 — OLED layout and power-save hardware acceptance PASS
+
+### USER-REPORTED TEST
+
+The user confirmed that all five CHECKPOINT-45 acceptance steps passed:
+
+1. Latest firmware compiled successfully for Arduino Nano / ATmega328P.
+2. The revised eight-row OLED layout was visually verified.
+3. The display remained active at 119 seconds and entered power-save at/after the 120-second inactivity threshold.
+4. A received Modbus request woke the OLED and the display showed current counters immediately.
+5. Modbus responses continued normally and the OLED did not flicker.
+
+### BUILD RESULT — FACT
+
+- Flash: **18,576 bytes (60% of 30,720 bytes)**.
+- Global SRAM: **1,613 bytes (78% of 2,048 bytes)**.
+- Remaining SRAM: **435 bytes** for stack and local variables.
+- Compilation: **PASS**, user-reported.
+
+Compared with CHECKPOINT-38 (16,962 bytes Flash / 1,592 bytes global SRAM / 456 bytes remaining), this build uses 1,614 additional Flash bytes and 21 additional global SRAM bytes, leaving 21 fewer bytes of reported SRAM headroom. Treat this as a direct comparison only if the board package, compiler, build settings and library versions are unchanged.
+
+### ACCEPTANCE
+
+- Eight-row layout: **PASS**.
+- 120-second OLED sleep timing: **PASS**.
+- Wake on Modbus receive with current statistics: **PASS**.
+- Normal Modbus response operation during/after OLED power-save: **PASS**.
+- No visible OLED flicker: **PASS**.
+- Nano firmware compilation: **PASS**.
+
+### DECISION
+
+- Close CHECKPOINT-45.
+- Mark M5 — Display as **COMPLETED**.
+- Preserve the current display implementation as the accepted baseline.
+- Do not make further display changes while beginning encoder work unless a regression is found.
+
+### RESOURCE NOTE
+
+The compiler reports 435 bytes of remaining SRAM. This is a limited margin; encoder integration must avoid dynamic allocation and unnecessary stack-heavy local objects. Validate runtime behavior and preserve the existing Modbus/OLED baseline.
+
+### NEXT STEP
+
+CHECKPOINT-47 — inspect current GitHub pin usage and implement the minimum encoder input test. D7 is reserved for the encoder button; D8/D9 are proposed for quadrature A/B pending a fresh source-level pin-conflict check. First acceptance criteria: correct direction, exactly one logical step per detent, reliable button press/release with debounce, and unchanged Modbus/OLED operation.
+
+### BLOCKERS
+
+No blocker for closing the display milestone. Encoder pin compatibility and input handling remain to be verified from the current repository source before implementation.
