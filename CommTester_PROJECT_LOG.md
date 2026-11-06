@@ -1197,3 +1197,72 @@ Compile and upload this revision. Run the wake acceptance test above before proc
 ### BLOCKERS
 
 This is a source-level correction only. Compilation and hardware behavior are not yet verified; no hardware PASS is claimed.
+
+
+---
+
+## CHECKPOINT-45 — OLED row layout revised; sleep timeout increased to 120 seconds (verification pending)
+
+### USER REQUEST
+
+The user specified the following eight-line OLED layout:
+
+1. `CommTester v0.4` — unchanged.
+2. Blank spacer line.
+3. `SLV` and `MST` addresses.
+4. Function code and description (`FC`).
+5. RX and TX counters.
+6. RATE.
+7. ERR and MISS counters on one line.
+8. Serial port settings.
+
+The inactivity timeout is increased from 30 seconds to 2 minutes.
+
+### CHANGE
+
+- Changed the OLED row mapping:
+  - Row 0: header, unchanged.
+  - Row 1: blank.
+  - Row 2: SLV/MST.
+  - Row 3: FC.
+  - Row 4: RX/TX.
+  - Row 5: RATE.
+  - Row 6: ERR/MISS.
+  - Row 7: serial settings.
+- Increased `DISPLAY_SLEEP_TIMEOUT` from `30000UL` to `120000UL`.
+- Kept the existing incremental row-refresh mechanism, current-statistics redraw after wake, and wake-on-non-timeout-receive behavior.
+- No Modbus logic, statistics semantics, pin assignments, or external libraries were changed.
+
+### SOURCE REVIEW
+
+- Fresh current GitHub `display.cpp` fetched before editing: PASS.
+- Updated `display.cpp` fetched back and content matched: PASS.
+- Confirmed all eight row positions and 120000 ms timeout in the committed source: PASS.
+- `PROJECT.md` updated and fetched back: PASS.
+- No external library was modified.
+
+### TEST
+
+- GitHub source update and post-write verification: PASS.
+- Arduino Nano compilation: NOT RUN.
+- OLED layout on hardware: NOT RUN.
+- 120-second sleep and wake test: NOT RUN.
+- Modbus regression: NOT RUN (display-only source change).
+
+### ACCEPTANCE TEST
+
+1. Compile for Arduino Nano / ATmega328P; report Flash and SRAM.
+2. Confirm line 1 remains unchanged and line 2 is blank.
+3. Confirm SLV/MST on line 3, FC on line 4, RX/TX on line 5, RATE on line 6, ERR/MISS on line 7, and `9600 8N1` on line 8.
+4. Leave the device without receive activity for 119 seconds: display must remain on.
+5. At or after 120 seconds without receive activity: display must enter power-save.
+6. Send one valid Modbus request after sleep: display must wake and show the latest counters without flicker or stale values.
+7. Confirm normal Modbus responses continue and the previous RX/TX/ERR/MISS values are retained.
+
+### NEXT STEP
+
+Compile and upload the latest GitHub revision, then perform the OLED layout and 120-second sleep/wake checks.
+
+### BLOCKERS
+
+Source-level implementation only. No compile or hardware PASS is claimed.
