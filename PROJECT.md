@@ -145,7 +145,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### OPEN QUESTIONS
 
-- Compile and hardware-test the KY-040 encoder input module. Confirm one CW/CCW event per detent, debounced button press/release, and unchanged Modbus/OLED/indicator operation under normal and repeated Modbus traffic.
+- Hardware-test the compiled KY-040 encoder input module. Confirm one CW/CCW event per detent, debounced button press/release, and unchanged Modbus/OLED/indicator operation under normal and repeated Modbus traffic. The current build reports 20,492 bytes Flash / 1,502 bytes global SRAM / 546 bytes remaining.
 - Confirm the KY040 1.0.3 library is installed in the Arduino build environment.
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
@@ -153,7 +153,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 - Run `modbus_test_all.py` after the latest statistics and PDU-length validation changes.
 - Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
 - Confirm RX/TX/ERROR indicator behavior.
-- Encoder hardware and input handling are not implemented yet; D7 is reserved for the encoder button, and D8/D9 are proposed for the quadrature channels pending source/pin-conflict review.
+- Encoder input test is implemented and compiles for Nano. Latest user-reported build: 20,492 bytes Flash (66%), 1,502 bytes global SRAM (73%), 546 bytes compiler-reported remaining. Direction, detent count, button debounce, and operation during Modbus traffic remain to be hardware-tested.
 - D5 startup melody, three synchronized flashes, periodic HEARTBEAT and sound arbitration have passed user-reported hardware verification (CHECKPOINT-47D). Current PROGMEM-optimized build: 19,686 bytes Flash (64%), 1,500 bytes global SRAM (73%), 548 bytes remaining. Complete Modbus regression and repeated traffic passed without hangs (CHECKPOINT-47C). The original cause of the earlier hang remains unproven.
 - Future MCU selection.
 
