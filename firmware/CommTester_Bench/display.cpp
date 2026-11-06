@@ -61,7 +61,7 @@ namespace {
     uint8_t i = 0;
     char value;
 
-    while (i < 16 && (value = (char)pgm_read_byte(text++)) != '\\0') {
+    while (i < 16 && (value = (char)pgm_read_byte(text++)) != '\0') {
       line[i++] = value;
     }
 
@@ -69,7 +69,7 @@ namespace {
       line[i++] = ' ';
     }
 
-    line[16] = '\\0';
+    line[16] = '\0';
     u8x8.drawString(0, row, line);
   }
 
@@ -184,7 +184,7 @@ namespace {
 
     char descriptionChar;
     while (pos < 16 &&
-           (descriptionChar = (char)pgm_read_byte(description++)) != '\\0') {
+           (descriptionChar = (char)pgm_read_byte(description++)) != '\0') {
       line[pos++] = descriptionChar;
     }
 
