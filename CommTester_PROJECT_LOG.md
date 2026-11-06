@@ -1352,3 +1352,72 @@ No blocker for closing the display milestone. Encoder pin compatibility and inpu
 
 - Pin conflict review and implementation are pending.
 - The melody and heartbeat have not yet been compiled or tested on hardware.
+
+
+---
+
+## CHECKPOINT-47A — D5 startup melody and HEARTBEAT implemented (verification pending)
+
+### CHANGE
+
+- Assigned D5 to `LED_HEARTBEAT`.
+- Added a startup event to the existing `Indicators` event queue. It plays three ascending notes and flashes D5 in sync:
+  - 523 Hz for 100 ms;
+  - 659 Hz for 100 ms;
+  - 784 Hz for 180 ms;
+  - approximately 40 ms between notes.
+- Added a periodic D5 heartbeat: 60 ms ON every 2 seconds, starting 2 seconds after the startup melody completes.
+- The startup melody and RX/TX/ERROR sounds use the same event queue and existing `tone()` / `noTone()` mechanism.
+- All timing is based on `millis()`; no blocking delays were added.
+- No external libraries, Modbus logic, RS-232 transport, OLED code, or encoder code were changed.
+
+### PIN REVIEW
+
+- D2 — RX LED.
+- D3 — TX LED.
+- D4 — ERROR LED.
+- D5 — HEARTBEAT LED (new use).
+- D6 — buzzer.
+- D7 — reserved encoder button.
+- D8/D9 — proposed encoder A/B.
+- D10/D11 — RS-232 SoftwareSerial.
+- OLED uses hardware I²C A4/A5.
+
+The reviewed current source files show no existing use of D5 in the other active modules. D7/D8/D9 remain reserved/proposed for the encoder and were not configured or changed in this update.
+
+### SOURCE REVIEW
+
+- Fresh GitHub files fetched before editing: PASS.
+- `indicators.cpp` updated and fetched back: PASS.
+- Startup event is inserted first during `Indicators::begin()`: PASS.
+- Startup melody is handled as one event in the shared sound queue: PASS.
+- Heartbeat is independent of RX/TX/ERROR event LEDs: PASS.
+- No executable `delay()` calls were added: PASS.
+- No external library or unrelated firmware module was changed.
+
+### TEST
+
+- GitHub source update and post-write fetch verification: PASS.
+- Arduino Nano compilation: NOT YET RUN.
+- Flash/SRAM measurement: NOT YET AVAILABLE.
+- Startup flash/melody hardware check: NOT YET RUN.
+- 2-second heartbeat hardware check: NOT YET RUN.
+- RX/TX/ERROR sound arbitration during/after startup: NOT YET RUN.
+- Modbus/OLED regression: NOT YET RUN after this change.
+
+### ACCEPTANCE TEST
+
+1. Power-cycle the Nano. Confirm exactly three D5 flashes synchronized with the three ascending notes; the melody must play once only.
+2. After the startup melody, confirm one approximately 60 ms D5 flash every 2 seconds.
+3. Send Modbus requests during the startup sequence. Confirm requests are still received and answered normally.
+4. Confirm queued RX/TX/ERROR sounds play after the startup melody without overlap or truncation.
+5. Confirm the OLED still updates, sleeps after 120 seconds and wakes with current counters.
+6. Compile for Arduino Nano / ATmega328P and record Flash/SRAM. Compare with the accepted baseline of 18,576 bytes Flash / 1,613 bytes global SRAM / 435 bytes remaining.
+
+### NEXT STEP
+
+Compile and upload this revision, then run the acceptance test above. Do not implement encoder handling until the D5 change passes.
+
+### BLOCKERS
+
+Compilation and all hardware checks are pending. The 435-byte SRAM headroom from the previous build is limited; the new compile report is required before proceeding.
