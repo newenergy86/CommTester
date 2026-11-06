@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <U8x8lib.h>
+#include <avr/pgmspace.h>
 
 // SSD1306 128x64, hardware I2C, text-only mode
 U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE);
@@ -22,6 +23,19 @@ namespace {
   uint32_t displayedErrors = 0;
   uint32_t missedCache = 0;
 
+  // Immutable UI strings are kept in program Flash, not copied to SRAM.
+  const char TEXT_HEADER[] PROGMEM = "CommTester v0.4";
+  const char TEXT_EMPTY[] PROGMEM = "";
+  const char TEXT_NO_FUNCTION[] PROGMEM = "FC:--";
+  const char TEXT_SERIAL[] PROGMEM = "9600 8N1";
+  const char DESC_UNKNOWN[] PROGMEM = "UNKNOWN";
+  const char DESC_READ_COIL[] PROGMEM = "READ COIL";
+  const char DESC_READ_DI[] PROGMEM = "READ DI";
+  const char DESC_READ_HR[] PROGMEM = "READ HR";
+  const char DESC_READ_IR[] PROGMEM = "READ IR";
+  const char DESC_WRITE_COIL[] PROGMEM = "WRITE COIL";
+  const char DESC_WRITE_HR[] PROGMEM = "WRITE HR";
+
   // Always write a complete 16-character row. This also removes stale
   // characters when a newly formatted value is shorter than the old one.
   void drawRow(uint8_t row, const char *text) {
@@ -38,6 +52,24 @@ namespace {
     }
 
     line[16] = '\0';
+    u8x8.drawString(0, row, line);
+  }
+
+  // Draw a fixed string directly from program Flash using a small stack buffer.
+  void drawRow_P(uint8_t row, PGM_P text) {
+    char line[17];
+    uint8_t i = 0;
+    char value;
+
+    while (i < 16 && (value = (char)pgm_read_byte(text++)) != '\\0') {
+      line[i++] = value;
+    }
+
+    while (i < 16) {
+      line[i++] = ' ';
+    }
+
+    line[16] = '\\0';
     u8x8.drawString(0, row, line);
   }
 
@@ -127,7 +159,7 @@ namespace {
     uint8_t pos = 3;
 
     if (functionCode == 0) {
-      drawRow(3, "FC:--");
+      drawRow_P(3, TEXT_NO_FUNCTION);
       return;
     }
 
@@ -137,21 +169,23 @@ namespace {
     appendUnsigned(line, pos, functionCode);
     line[pos++] = ' ';
 
-    const char *description = "UNKNOWN";
+    PGM_P description = DESC_UNKNOWN;
 
     switch (functionCode) {
-      case 1:  description = "READ COIL";  break;
-      case 2:  description = "READ DI";    break;
-      case 3:  description = "READ HR";    break;
-      case 4:  description = "READ IR";    break;
-      case 5:  description = "WRITE COIL"; break;
-      case 6:  description = "WRITE HR";   break;
-      case 15: description = "WRITE COIL"; break;
-      case 16: description = "WRITE HR";   break;
+      case 1:  description = DESC_READ_COIL;  break;
+      case 2:  description = DESC_READ_DI;    break;
+      case 3:  description = DESC_READ_HR;    break;
+      case 4:  description = DESC_READ_IR;    break;
+      case 5:  description = DESC_WRITE_COIL; break;
+      case 6:  description = DESC_WRITE_HR;   break;
+      case 15: description = DESC_WRITE_COIL; break;
+      case 16: description = DESC_WRITE_HR;   break;
     }
 
-    while (*description != '\0' && pos < 16) {
-      line[pos++] = *description++;
+    char descriptionChar;
+    while (pos < 16 &&
+           (descriptionChar = (char)pgm_read_byte(description++)) != '\\0') {
+      line[pos++] = descriptionChar;
     }
 
     line[pos] = '\0';
@@ -261,15 +295,15 @@ namespace {
                        uint32_t rx, uint32_t tx,
                        uint32_t errors, uint32_t missed) {
     u8x8.clearDisplay();
-    drawRow(0, "CommTester v0.4");
+    drawRow_P(0, TEXT_HEADER);
 
-    drawRow(1, "");
+    drawRow_P(1, TEXT_EMPTY);
     drawAddressPair(slaveId, masterId);
     drawErrorMissed(errors, missed);
     drawFunction(functionCode);
     drawTraffic(rx, tx);
     drawRate(rx, tx);
-    drawRow(7, "9600 8N1");
+    drawRow_P(7, TEXT_SERIAL);
   }
 
 }
