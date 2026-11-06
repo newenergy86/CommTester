@@ -1424,3 +1424,54 @@ Compile and upload this revision, then run the acceptance test above. Do not imp
 ### BLOCKERS
 
 Compilation is PASS. Startup melody, heartbeat timing, sound arbitration and Modbus/OLED regression hardware checks are still pending. SRAM headroom is 424 bytes and remains limited.
+
+
+---
+
+## CHECKPOINT-47B — OLED constant strings moved to program Flash (verification pending)
+
+### USER-REPORTED ISSUE
+
+After the CHECKPOINT-47A firmware was uploaded, the user observed that the HEARTBEAT LED and corresponding sound operate, but the device appears to hang during a Modbus test run. The user suspects insufficient memory. This is not yet proven to be SRAM exhaustion.
+
+### CHANGE
+
+- Re-fetched the current GitHub display.cpp before editing.
+- Moved fixed OLED labels and Modbus function descriptions into AVR program Flash using PROGMEM.
+- Added drawRow_P() to read fixed strings from Flash into the existing 17-byte display line buffer before calling U8X8.
+- Function descriptions are now read with pgm_read_byte().
+- Dynamic display rows and their formatting remain unchanged.
+- No Modbus maps, RTU transport, external libraries, pin assignments, indicator behavior or OLED layout were changed.
+
+### SOURCE REVIEW
+
+- Fresh GitHub source fetched before editing: PASS.
+- display.cpp updated and fetched back; exact content match: PASS.
+- External libraries unchanged: PASS.
+- Modbus logic and display layout intentionally unchanged: PASS.
+
+### TEST
+
+- Source update and post-write verification: PASS.
+- Arduino Nano / ATmega328P compilation: PENDING.
+- Flash/SRAM comparison: PENDING.
+- Sustained Modbus test and hang reproduction: PENDING.
+- OLED display and sleep/wake regression: PENDING.
+- Startup melody, heartbeat and RX/TX/ERROR sound arbitration regression: PENDING.
+
+### ACCEPTANCE TEST
+
+1. Compile for Arduino Nano / ATmega328P and report Flash and global SRAM.
+2. Compare with the pre-optimization build: 19,548 bytes Flash / 1,624 bytes global SRAM / 424 bytes remaining.
+3. Run the existing FC01/02/03/04/05/06/15/16 Modbus regression.
+4. Run sustained/repeated Modbus traffic long enough to determine whether the previous hang recurs.
+5. Confirm OLED text, row layout, 120-second sleep and wake behavior are unchanged.
+6. Confirm startup melody, heartbeat and RX/TX/ERROR indications remain functional.
+
+### NEXT STEP
+
+Compile and upload CHECKPOINT-47B. First establish whether SRAM usage decreases and whether the hang is reproducible. If the device still hangs, investigate stack/heap collision and blocking serial diagnostics as separate hypotheses; do not make unrelated optimizations.
+
+### BLOCKERS
+
+No compile, memory reduction or hardware PASS is claimed yet. The root cause of the reported hang remains TBD.
