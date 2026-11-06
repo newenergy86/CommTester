@@ -1475,3 +1475,51 @@ Compile and upload CHECKPOINT-47B. First establish whether SRAM usage decreases 
 ### BLOCKERS
 
 No compile, memory reduction or hardware PASS is claimed yet. The root cause of the reported hang remains TBD.
+
+
+---
+
+## CHECKPOINT-47C — PROGMEM build and Modbus stability regression PASS
+
+### BUILD RESULT — FACT
+
+The user compiled the CHECKPOINT-47B source for Arduino Nano / ATmega328P and reported:
+
+- Flash: **19,686 bytes (64% of 30,720 bytes)**.
+- Global SRAM: **1,500 bytes (73% of 2,048 bytes)**.
+- Remaining SRAM: **548 bytes**.
+- Compilation: **PASS**.
+
+Compared with CHECKPOINT-47A (19,548 bytes Flash / 1,624 bytes global SRAM / 424 bytes remaining):
+
+- Flash increased by 138 bytes.
+- Global SRAM decreased by 124 bytes.
+- Compiler-reported free SRAM increased by 124 bytes.
+
+### TEST — USER-REPORTED
+
+- Complete Modbus test suite: **PASS**.
+- Repeated Modbus traffic test: **PASS**.
+- Device hang observed on the earlier CHECKPOINT-47A build did not recur; no hangs were observed during the reported tests.
+
+### ANALYSIS / LIMITATION
+
+The successful PROGMEM build and disappearance of the hang are correlated observations. This test does not independently prove that SRAM exhaustion was the original root cause, nor does the compiler's 548-byte free-SRAM figure establish worst-case runtime stack margin.
+
+### DECISION
+
+- Accept the PROGMEM optimization as the current Nano firmware baseline.
+- Preserve the current Modbus implementation; no further memory or protocol changes are justified by this test result.
+- Do not continue optimizing the already working Modbus path without a measured defect or new requirement.
+
+### NEXT STEP
+
+Complete the remaining explicit hardware acceptance checks for D5 startup melody/HEARTBEAT timing, sound arbitration and OLED behavior on this build. Then proceed to the minimal encoder input test.
+
+### STATUS
+
+- Compile and memory comparison: **PASS**.
+- Complete Modbus regression: **PASS**.
+- Repeated traffic / no-hang test: **PASS**.
+- Original hang root cause: **TBD**.
+- Full D5 melody/heartbeat and sound-arbitration acceptance on this build: **PENDING**.
