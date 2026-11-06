@@ -1596,9 +1596,12 @@ Review the current main sketch and all active modules for D7/D8/D9 pin conflicts
 
 ### TEST
 
-- GitHub source updates: PASS.
-- Post-write source fetch verification: PENDING.
-- Arduino Nano compilation: NOT RUN.
+- GitHub source updates and post-write fetch verification: PASS.
+- Arduino Nano / ATmega328P compilation: **PASS**, user-reported.
+- Flash: **20,492 bytes (66% of 30,720 bytes)**.
+- Global SRAM: **1,502 bytes (73% of 2,048 bytes)**.
+- Compiler-reported remaining SRAM: **546 bytes**.
+- Compared with CHECKPOINT-47C (19,686 bytes Flash / 1,500 bytes global SRAM / 548 bytes remaining): Flash +806 bytes, global SRAM +2 bytes, reported free SRAM −2 bytes.
 - Encoder direction / one-step-per-detent test: NOT RUN.
 - Button debounce test: NOT RUN.
 - Modbus regression under encoder activity: NOT RUN.
@@ -1622,5 +1625,6 @@ Compile and upload this revision, then perform the encoder acceptance test befor
 ### STATUS
 
 - Encoder source implementation: COMPLETE.
-- Compile and hardware verification: PENDING.
+- Arduino Nano compilation: **PASS**.
+- Encoder and full hardware regression verification: PENDING.
 - No hardware PASS is claimed in this checkpoint.
