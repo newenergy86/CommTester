@@ -1523,3 +1523,39 @@ Complete the remaining explicit hardware acceptance checks for D5 startup melody
 - Repeated traffic / no-hang test: **PASS**.
 - Original hang root cause: **TBD**.
 - Full D5 melody/heartbeat and sound-arbitration acceptance on this build: **PENDING**.
+
+
+---
+
+## CHECKPOINT-47D — Startup melody, HEARTBEAT and sound arbitration hardware PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user confirms that the following behaviors are present and working on the current PROGMEM-optimized Nano build:
+
+- Startup melody: **PASS**.
+- Three synchronized startup flashes on D5: **PASS**.
+- Periodic D5 HEARTBEAT: **PASS**.
+- No conflicts between startup melody and RX/TX/ERROR sound indications: **PASS**.
+
+### ACCEPTANCE
+
+The previously pending startup/heartbeat and sound-arbitration checks are now accepted based on the user's hardware confirmation. Together with CHECKPOINT-47C, the current build has passed compilation, memory measurement, complete Modbus regression, repeated traffic stability, and the reported indicator checks.
+
+### DECISION
+
+- Accept D5 startup melody and HEARTBEAT implementation as the current hardware-verified baseline.
+- Do not modify the indicator state machine without a demonstrated defect.
+- Proceed to the minimal encoder input test, after a fresh review of current GitHub pin usage and source.
+
+### NEXT STEP
+
+Review the current main sketch and all active modules for D7/D8/D9 pin conflicts. Then implement only the minimum encoder input test: direction, one logical step per detent, and debounced button press/release. Preserve the verified Modbus, OLED and indicator behavior.
+
+### STATUS
+
+- Startup melody and three D5 flashes: **PASS**.
+- Periodic D5 HEARTBEAT: **PASS**.
+- Sound arbitration: **PASS**.
+- Modbus regression and repeated traffic: **PASS** (CHECKPOINT-47C).
+- Encoder input implementation: **NOT STARTED**.
