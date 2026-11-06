@@ -1559,3 +1559,68 @@ Review the current main sketch and all active modules for D7/D8/D9 pin conflicts
 - Sound arbitration: **PASS**.
 - Modbus regression and repeated traffic: **PASS** (CHECKPOINT-47C).
 - Encoder input implementation: **NOT STARTED**.
+
+
+---
+
+## CHECKPOINT-48 — KY-040 encoder input test implemented (verification pending)
+
+### CHANGE
+
+- Added project-owned `encoder.h/.cpp`.
+- Integrated `Encoder::begin()` and `Encoder::update()` into the main sketch.
+- Connected encoder signals in source as CLK/A=D8, DT/B=D9, SW=D7.
+- Rotation decoding uses the external KY040 library by codingABI, version 1.0.3, in polling mode. The external library itself is not modified.
+- Encoder signal pins are configured as `INPUT`, relying on the encoder module's onboard pull-up resistors.
+- Added project-owned 30 ms software debounce for the SW button.
+- Direction and stable button transitions are reported over USB Serial at 115200 baud:
+  - `ENC: CW`
+  - `ENC: CCW`
+  - `ENC: BUTTON PRESSED`
+  - `ENC: BUTTON RELEASED`
+- No menu, OLED layout, Modbus logic, RS-232 transport, indicators, or external library source was changed.
+
+### DESIGN NOTE
+
+- D8/D9 belong to the ATmega328P pin-change interrupt group also used by SoftwareSerial RX on D10. To avoid sharing/replacing the SoftwareSerial interrupt vector, the encoder is initially polled using KY040's polling API.
+- In the current Modbus transport, `_readTimeout` is initialized to zero and no nonzero timeout is configured by the Slave setup. Thus the no-data path returns immediately; frame reception itself temporarily occupies the loop while the RTU frame boundary is collected. The effect of this interval on encoder polling must be checked on hardware.
+
+### SOURCE REVIEW
+
+- Fresh current GitHub source fetched before implementation: PASS.
+- D7/D8/D9 pin usage checked against the current sketch, indicator module and RS-232 transport: no existing assignments found.
+- Main sketch updated and fetched back: PASS.
+- New encoder module files created: PASS.
+- `PROJECT.md` updated: PASS.
+- External KY040 library source not copied or modified: PASS.
+
+### TEST
+
+- GitHub source updates: PASS.
+- Post-write source fetch verification: PENDING.
+- Arduino Nano compilation: NOT RUN.
+- Encoder direction / one-step-per-detent test: NOT RUN.
+- Button debounce test: NOT RUN.
+- Modbus regression under encoder activity: NOT RUN.
+- OLED and indicator regression: NOT RUN.
+
+### ACCEPTANCE TEST
+
+1. Install KY040 library version 1.0.3 by codingABI in the Arduino IDE/library environment.
+2. Compile for Arduino Nano / ATmega328P; record Flash and SRAM. Treat the previous verified build (19,686 bytes Flash / 1,500 bytes global SRAM / 548 bytes remaining) as the comparison baseline, not as a prediction.
+3. Rotate slowly clockwise through 20 detents. Expect exactly 20 `ENC: CW` messages and no CCW messages.
+4. Rotate slowly counter-clockwise through 20 detents. Expect exactly 20 `ENC: CCW` messages and no CW messages.
+5. Repeat rotations at a moderate speed and while Modbus traffic is active; check for missed or duplicated detents.
+6. Press and release SW repeatedly, including short presses and contact bounce. Expect one message per stable press and one per stable release.
+7. Run the full FC01/02/03/04/05/06/15/16 Modbus regression and repeated traffic test.
+8. Confirm OLED refresh/sleep/wake and RX/TX/ERROR/HEARTBEAT indications remain unchanged.
+
+### NEXT STEP
+
+Compile and upload this revision, then perform the encoder acceptance test before adding any menu or UI behavior.
+
+### STATUS
+
+- Encoder source implementation: COMPLETE.
+- Compile and hardware verification: PENDING.
+- No hardware PASS is claimed in this checkpoint.
