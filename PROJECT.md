@@ -18,7 +18,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Serial transport: project-specific `ModbusRTU` layer and external `ModbusADU` dependency.
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
-- Encoder input: KY-040 on CLK=D8, DT=D9, SW=D7. Rotation is decoded in polling mode by the external KY040 library (codingABI, v1.0.3); the button uses a project-owned 30 ms debounce. Direction and button transitions are reported to USB Serial at 115200 baud. Rotation and button-press sounds are routed through the shared Indicators event queue. The sound feedback has passed the user's hardware check (CHECKPOINT-49); exact detent counts and full encoder/Modbus regression remain to be verified.
+- Encoder input: KY-040 on CLK=D8, DT=D9, SW=D7. Rotation is decoded in polling mode by the external KY040 library (codingABI, v1.0.3); the button uses a project-owned 30 ms debounce. Direction and button transitions are reported to USB Serial at 115200 baud. Rotation and button-press sounds are routed through the shared Indicators event queue. The user has verified exactly 20 CW and 20 CCW events for 20 detents in each direction, with correct operation during active Modbus traffic (CHECKPOINT-49B). Button press/release transitions and sound feedback are hardware-verified; full Modbus function regression and OLED/indicator regression after the encoder sound change remain pending.
 - Indicators: RX/TX/ERROR LEDs, D5 HEARTBEAT LED and buzzer. D5 startup triple-flash with a three-note melody and a 2-second heartbeat are implemented in source and compile successfully for Nano; hardware verification is pending. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
 - Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. After wake, the full redraw is deferred to the next `Display::update()` call so it uses the latest post-frame statistics rather than stale cached values. The eight-row layout and 120-second inactivity power-save/wake behavior have passed user-reported compile and hardware verification (CHECKPOINT-46).
 
@@ -145,7 +145,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### OPEN QUESTIONS
 
-- Complete the KY-040 encoder acceptance test: confirm one CW/CCW event per detent, debounced button behavior, and unchanged Modbus/OLED/indicator operation under normal and repeated Modbus traffic. Sound feedback is hardware-verified. The latest user-reported build is 20,532 bytes Flash / 1,506 bytes global SRAM / 542 bytes remaining.
+- Run the full FC01/02/03/04/05/06/15/16 Modbus regression after the encoder sound-feedback change; then confirm OLED refresh/sleep/wake and RX/TX/ERROR/HEARTBEAT indications. Exact 20 CW and 20 CCW events for 20 detents in each direction, plus continued encoder operation during active Modbus traffic, passed in CHECKPOINT-49B. Button press/release transitions and sound feedback are verified. The latest user-reported build is 20,532 bytes Flash / 1,506 bytes global SRAM / 542 bytes remaining.
 - Confirm the KY040 1.0.3 library is installed in the Arduino build environment.
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
@@ -159,7 +159,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### NEXT STEP
 
-Complete the encoder acceptance test by checking exact CW/CCW event counts and button debounce, then run the Modbus regression and OLED/indicator checks. Preserve the verified baseline.
+Run the complete FC01/02/03/04/05/06/15/16 Modbus regression after the encoder sound-feedback change, then verify OLED and all indicator behavior. Preserve the verified baseline.
 
 ### BLOCKERS
 
