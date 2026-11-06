@@ -18,7 +18,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Serial transport: project-specific `ModbusRTU` layer and external `ModbusADU` dependency.
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
-- Indicators: RX/TX/ERROR LEDs and buzzer. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
+- Indicators: RX/TX/ERROR LEDs, D5 HEARTBEAT LED and buzzer. D5 startup triple-flash with a three-note melody and a 2-second heartbeat are implemented in source; compile/hardware verification is pending. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
 - Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. After wake, the full redraw is deferred to the next `Display::update()` call so it uses the latest post-frame statistics rather than stale cached values. The eight-row layout and 120-second inactivity power-save/wake behavior have passed user-reported compile and hardware verification (CHECKPOINT-46).
 
 ### Current operating mode
@@ -150,12 +150,13 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 - Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
 - Confirm RX/TX/ERROR indicator behavior.
 - Encoder hardware and input handling are not implemented yet; D7 is reserved for the encoder button, and D8/D9 are proposed for the quadrature channels pending source/pin-conflict review.
+- D5 startup melody and periodic HEARTBEAT are implemented in source; hardware verification is pending.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Start CHECKPOINT-47 — encoder input implementation. First inspect the current GitHub sketch and pin assignments, then confirm the proposed D8/D9 quadrature inputs and reserved D7 button do not conflict with active hardware. Preserve the verified Modbus, RS-232 and OLED behavior; establish a minimal encoder test with measurable direction, step and button/debounce PASS criteria before integrating menu behavior.
+Compile and upload the D5 startup/heartbeat revision. Verify exactly three startup flashes with the three-note melody, then one 60 ms heartbeat flash every 2 seconds. Confirm RX/TX/ERROR sounds are not interrupted and Modbus/OLED behavior is unchanged. Only after this passes, proceed to encoder input handling on D8/D9 with the D7 button.
 
 ### BLOCKERS
 
-SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The user confirmed that incremental OLED row refresh removed the observed flicker. The revised OLED layout, 120-second sleep/wake and normal Modbus operation have passed user-reported compile and hardware verification. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. SRAM headroom is 456 bytes, so stack usage must be considered before adding features.
+SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The user confirmed that incremental OLED row refresh removed the observed flicker. The revised OLED layout, 120-second sleep/wake and normal Modbus operation have passed user-reported compile and hardware verification. D5 startup/heartbeat source changes are committed but not yet compiled or tested on hardware. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. The last accepted build left 435 bytes of SRAM; remeasure after the D5 change.
