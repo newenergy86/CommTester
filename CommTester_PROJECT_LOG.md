@@ -1628,3 +1628,66 @@ Compile and upload this revision, then perform the encoder acceptance test befor
 - Arduino Nano compilation: **PASS**.
 - Encoder and full hardware regression verification: PENDING.
 - No hardware PASS is claimed in this checkpoint.
+
+
+## CHECKPOINT-49 — Encoder sound feedback added to shared indicator queue (verification pending)
+
+### USER OBSERVATION
+
+After uploading CHECKPOINT-48, the user reported that rotating and pressing the encoder did not interfere with Modbus packet reception. However, without feedback it was not clear whether the encoder events were being detected. This is a user-reported observation; encoder event counts and sound behavior were not yet verified.
+
+### CHANGE
+
+- Added `Indicators::encoderStep()` and `Indicators::encoderPress()` to the project-owned indicator interface.
+- Added two event types to the existing shared sound queue:
+  - Encoder rotation step: 2800 Hz for 35 ms.
+  - Encoder button press: 1200 Hz for 110 ms.
+- Both clockwise and counter-clockwise rotation events enqueue the same short step sound.
+- A debounced button press enqueues the longer, lower-pitched sound. Button release remains silent.
+- The encoder continues to print direction and button transitions to USB Serial.
+- All encoder sounds use the existing `Indicators::update()` / `tone()` event mechanism. No direct tone generation, delay, ISR, pin reassignment, Modbus change, or external library modification was introduced.
+
+### DESIGN NOTE
+
+- Encoder sounds are serialized with startup, RX, TX and ERROR sounds; they cannot interrupt an active sound.
+- The shared queue has a fixed capacity of eight events. As with existing event types, an event is dropped if the queue is full. Under sustained traffic, audible feedback may therefore be delayed or omitted, but the encoder callback does not wait for sound playback.
+- This is intended as diagnostic feedback, not as a guaranteed one-sound-per-detent interface under a saturated sound queue.
+
+### SOURCE REVIEW
+
+- Fresh current GitHub sources fetched before editing: PASS.
+- `encoder.cpp`, `indicators.cpp`, and `indicators.h` updated and fetched back with exact content match: PASS.
+- `PROJECT.md` updated and fetched back with exact content match: PASS.
+- No external library, Modbus code, RS-232 transport, OLED code, or pin assignment changed.
+
+### TEST
+
+- GitHub source update and post-write verification: PASS.
+- Arduino Nano / ATmega328P compilation: NOT RUN.
+- Flash/SRAM measurement: NOT RUN.
+- Encoder rotation sound: NOT RUN on hardware.
+- Encoder button-press sound: NOT RUN on hardware.
+- Startup melody and RX/TX/ERROR sound arbitration regression: NOT RUN.
+- Modbus regression and sustained traffic: NOT RUN after this change.
+
+### ACCEPTANCE TEST
+
+1. Compile for Arduino Nano / ATmega328P and record Flash/SRAM.
+2. Rotate one detent at a time in both directions. Confirm each reported `ENC: CW` or `ENC: CCW` event produces one short, high-pitched sound.
+3. Press and release the encoder button. Confirm one lower-pitched sound on each stable press and no sound on release.
+4. Rotate repeatedly at moderate speed. Check for missed or duplicated serial events and audible feedback.
+5. Repeat while Modbus traffic is active. Confirm packet reception and responses remain normal; confirm RX/TX sounds and encoder sounds are serialized without overlap.
+6. Power-cycle and confirm the startup melody still plays correctly.
+7. Run the full FC01/02/03/04/05/06/15/16 Modbus regression and confirm OLED and LED behavior are unchanged.
+
+### NEXT STEP
+
+Compile and upload this revision, then perform the encoder sound-feedback acceptance test. Do not add menu behavior until the input and sound checks pass.
+
+### STATUS
+
+- Source implementation: COMPLETE.
+- GitHub write/read-back verification: PASS.
+- Compilation: PENDING.
+- Encoder and sound hardware verification: PENDING.
+- Modbus regression after this change: PENDING.
