@@ -22,6 +22,8 @@ const unsigned long HEARTBEAT_ON_TIME = 60;
 const unsigned long SOUND_RX_TIME    = 70;
 const unsigned long SOUND_TX_TIME    = 70;
 const unsigned long SOUND_ERROR_TIME = 250;
+const unsigned long SOUND_ENCODER_STEP_TIME = 35;
+const unsigned long SOUND_ENCODER_PRESS_TIME = 110;
 
 const unsigned long SOUND_PAUSE = 30;
 const unsigned long STARTUP_NOTE_GAP = 40;
@@ -34,6 +36,8 @@ const unsigned long STARTUP_NOTE_GAP = 40;
 const unsigned int SOUND_RX_FREQ    = 2400;
 const unsigned int SOUND_TX_FREQ    = 1800;
 const unsigned int SOUND_ERROR_FREQ = 700;
+const unsigned int SOUND_ENCODER_STEP_FREQ = 2800;
+const unsigned int SOUND_ENCODER_PRESS_FREQ = 1200;
 
 
 // ============================================
@@ -53,7 +57,9 @@ enum EventType {
   EVENT_STARTUP,
   EVENT_RX,
   EVENT_TX,
-  EVENT_ERROR
+  EVENT_ERROR,
+  EVENT_ENCODER_STEP,
+  EVENT_ENCODER_PRESS
 };
 
 const byte EVENT_QUEUE_SIZE = 8;
@@ -207,6 +213,14 @@ void startEvent(EventType type) {
       tone(BUZZER, SOUND_ERROR_FREQ);
       break;
 
+    case EVENT_ENCODER_STEP:
+      tone(BUZZER, SOUND_ENCODER_STEP_FREQ);
+      break;
+
+    case EVENT_ENCODER_PRESS:
+      tone(BUZZER, SOUND_ENCODER_PRESS_FREQ);
+      break;
+
     default:
       activeEvent = EVENT_NONE;
       noTone(BUZZER);
@@ -229,6 +243,12 @@ unsigned long getEventDuration(EventType type) {
 
     case EVENT_ERROR:
       return SOUND_ERROR_TIME;
+
+    case EVENT_ENCODER_STEP:
+      return SOUND_ENCODER_STEP_TIME;
+
+    case EVENT_ENCODER_PRESS:
+      return SOUND_ENCODER_PRESS_TIME;
 
     default:
       return 0;
@@ -387,6 +407,20 @@ void Indicators::tx() {
 
 void Indicators::error() {
   queueEvent(EVENT_ERROR);
+}
+
+
+// ============================================
+// ENCODER SOUND INDICATION
+// ============================================
+
+void Indicators::encoderStep() {
+  queueEvent(EVENT_ENCODER_STEP);
+}
+
+
+void Indicators::encoderPress() {
+  queueEvent(EVENT_ENCODER_PRESS);
 }
 
 
