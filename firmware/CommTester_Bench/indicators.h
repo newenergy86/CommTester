@@ -9,6 +9,8 @@ namespace Indicators {
   void rx();
   void tx();
   void error();
+  void encoderStep();
+  void encoderPress();
 }
 
 #endif
