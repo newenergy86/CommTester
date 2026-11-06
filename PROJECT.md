@@ -19,7 +19,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
 - Indicators: RX/TX/ERROR LEDs and buzzer. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
-- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. After wake, the full redraw is deferred to the next `Display::update()` call so it uses the latest post-frame statistics rather than stale cached values. A 30-second inactivity power-save and wake on any non-timeout Modbus receive event are implemented in source. Compilation and OLED hardware verification are pending.
+- Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. After wake, the full redraw is deferred to the next `Display::update()` call so it uses the latest post-frame statistics rather than stale cached values. A 120-second inactivity power-save and wake on any non-timeout Modbus receive event are implemented in source. Compilation and OLED hardware verification are pending.
 
 ### Current operating mode
 
@@ -79,7 +79,7 @@ RTU inter-byte timing behavior has been tested with normal frames and deliberate
 - Constructor: `U8X8_SSD1306_128X64_NONAME_HW_I2C` (text-only mode).
 - Interface: hardware I²C; Nano SDA=A4 and SCL=A5.
 - The standalone test sketch compiled and the user confirmed that the physical display starts and renders without visible problems. The integrated U8X8 text-mode firmware has also been flashed; the user reports no visible failures so far, but a complete display-enabled regression is not recorded.
-- The Slave screen shows the local Slave ID, destination ID from the latest valid RTU frame (`MST`), last function code, RX/TX counters, response rate, and combined ERR/MISS counters. RX counts every completed receive event, including bad-CRC and malformed RTU/PDU frames; TX counts responses successfully handed to the serial transport; RATE is TX/RX. ERR counts RTU CRC/framing errors and malformed request lengths. MISS counts valid, structurally complete requests that this Slave intentionally ignores because their destination ID is not its own (including broadcast ID 0). Malformed foreign-address frames count as ERR, not MISS. Unsupported function codes and valid requests producing Modbus exception responses are not counted as ERR. Both ERR and MISS start at zero and are displayed together on OLED row 2. RX/TX/ERR/MISS values use compact k/M/G notation when needed. The previous compile reports predate the current statistics changes and must not be treated as measurements of this revision.
+- The Slave screen shows the local Slave ID, destination ID from the latest valid RTU frame (`MST`), last function code, RX/TX counters, response rate, and combined ERR/MISS counters. RX counts every completed receive event, including bad-CRC and malformed RTU/PDU frames; TX counts responses successfully handed to the serial transport; RATE is TX/RX. ERR counts RTU CRC/framing errors and malformed request lengths. MISS counts valid, structurally complete requests that this Slave intentionally ignores because their destination ID is not its own (including broadcast ID 0). Malformed foreign-address frames count as ERR, not MISS. Unsupported function codes and valid requests producing Modbus exception responses are not counted as ERR. Both ERR and MISS start at zero and are displayed together on OLED row 7 (the seventh text row after the header and blank spacer). RX/TX/ERR/MISS values use compact k/M/G notation when needed. The previous compile reports predate the current statistics changes and must not be treated as measurements of this revision.
 
 The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/runtime requirements.
 
@@ -114,7 +114,7 @@ In particular:
 
 ### CURRENT STATE
 
-The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MISS, computes RATE as TX/RX, rejects malformed request lengths before PDU processing, and preserves received frame length on RTU CRC/framing errors for diagnostics. MISS counts valid requests ignored due to a foreign/broadcast destination ID. The RATE digit formatting and combined ERR/MISS OLED row are committed. OLED wake redraw has been corrected in source to use the latest statistics snapshot; compilation and hardware verification are pending.
+The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MISS, computes RATE as TX/RX, rejects malformed request lengths before PDU processing, and preserves received frame length on RTU CRC/framing errors for diagnostics. MISS counts valid requests ignored due to a foreign/broadcast destination ID. The RATE digit formatting, combined ERR/MISS row, revised eight-row layout and 120-second OLED inactivity timeout are committed. OLED wake redraw uses the latest statistics snapshot; compilation and hardware verification of the current display revision are pending.
 
 ### COMPLETED
 
@@ -128,7 +128,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 - SERVICE-free Nano firmware compilation passed; Flash/SRAM usage recorded in CHECKPOINT-38.
 - Complete reported Modbus function regression passed after SERVICE removal; see CHECKPOINT-39.
 - Incremental OLED row refresh implemented in source; user confirmed that the screen no longer flickers.
-- RATE percent-sign formatting and 30-second OLED power-save/wake behavior implemented in source; compile/hardware verification pending in CHECKPOINT-41.
+- RATE percent-sign formatting and 120-second OLED power-save/wake behavior implemented in source; compile/hardware verification pending in CHECKPOINT-45.
 - RX/TX/ERR statistics semantics and malformed-PDU length rejection implemented in source; verification pending in CHECKPOINT-42.
 
 ### DECISIONS
@@ -145,7 +145,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 ### OPEN QUESTIONS
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
-- Compile and verify RATE formatting, combined ERR/MISS row, 30-second OLED sleep/wake, and RX/TX/ERR/MISS accounting.
+- Compile and verify the revised eight-row OLED layout, RATE formatting, combined ERR/MISS row, 120-second sleep/wake, and RX/TX/ERR/MISS accounting.
 - Review `modbus_error_test.py` test 05 and decide whether a valid-CRC malformed FC03 request should be discarded or answered with exception 03.
 - Run `modbus_test_all.py` after the latest statistics and PDU-length validation changes.
 - Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
@@ -155,7 +155,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### NEXT STEP
 
-Compile and upload the latest display revision. Verify RATE=57.1% for RX=7/TX=4, the combined `ERR:2 MISS:1` row, default ERR=0/MISS=0, and especially OLED wake after 30 seconds: the first received frame must be reflected immediately in the counters after wake. Also verify malformed-frame rejection, foreign-ID MISS accounting, recovery after errors, and all FC01/02/03/04/05/06/15/16 regression tests. Do not start encoder work until this revision passes.
+Compile and upload the latest display revision. Verify the eight-row layout, RATE=57.1% for RX=7/TX=4, combined ERR/MISS row, default ERR=0/MISS=0, OLED sleep after 120 seconds and immediate wake with current counters on the first received frame. Also verify malformed-frame rejection, foreign-ID MISS accounting, recovery after errors, and all FC01/02/03/04/05/06/15/16 regression tests. Do not start encoder work until this revision passes.
 
 ### BLOCKERS
 
