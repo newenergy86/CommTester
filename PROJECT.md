@@ -18,7 +18,7 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Serial transport: project-specific `ModbusRTU` layer and external `ModbusADU` dependency.
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
-- Encoder input test: KY-040 on CLK=D8, DT=D9, SW=D7. Rotation is decoded in polling mode by the external KY040 library (codingABI, v1.0.3); the button uses a project-owned 30 ms debounce. The module currently reports direction and button transitions to USB Serial at 115200 baud. Hardware verification is pending.
+- Encoder input: KY-040 on CLK=D8, DT=D9, SW=D7. Rotation is decoded in polling mode by the external KY040 library (codingABI, v1.0.3); the button uses a project-owned 30 ms debounce. Direction and button transitions are reported to USB Serial at 115200 baud. Rotation and button-press sounds are routed through the shared Indicators event queue; hardware verification of encoder input and sound feedback is pending.
 - Indicators: RX/TX/ERROR LEDs, D5 HEARTBEAT LED and buzzer. D5 startup triple-flash with a three-note melody and a 2-second heartbeat are implemented in source and compile successfully for Nano; hardware verification is pending. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
 - Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. After wake, the full redraw is deferred to the next `Display::update()` call so it uses the latest post-frame statistics rather than stale cached values. The eight-row layout and 120-second inactivity power-save/wake behavior have passed user-reported compile and hardware verification (CHECKPOINT-46).
 
@@ -145,7 +145,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### OPEN QUESTIONS
 
-- Hardware-test the compiled KY-040 encoder input module. Confirm one CW/CCW event per detent, debounced button press/release, and unchanged Modbus/OLED/indicator operation under normal and repeated Modbus traffic. The current build reports 20,492 bytes Flash / 1,502 bytes global SRAM / 546 bytes remaining.
+- Compile and hardware-test the KY-040 encoder input and sound-feedback revision. Confirm one CW/CCW event per detent, one debounced button-press event, distinct audible feedback, and unchanged Modbus/OLED/indicator operation under normal and repeated Modbus traffic. The previous encoder-only build reported 20,492 bytes Flash / 1,502 bytes global SRAM / 546 bytes remaining; the new build must be measured.
 - Confirm the KY040 1.0.3 library is installed in the Arduino build environment.
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
@@ -153,14 +153,14 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 - Run `modbus_test_all.py` after the latest statistics and PDU-length validation changes.
 - Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
 - Confirm RX/TX/ERROR indicator behavior.
-- Encoder input test is implemented and compiles for Nano. Latest user-reported build: 20,492 bytes Flash (66%), 1,502 bytes global SRAM (73%), 546 bytes compiler-reported remaining. Direction, detent count, button debounce, and operation during Modbus traffic remain to be hardware-tested.
+- Encoder input test and queued sound feedback are implemented in source. The encoder-only build compiled at 20,492 bytes Flash (66%), 1,502 bytes global SRAM (73%), 546 bytes compiler-reported remaining. The sound-feedback revision has not yet been compiled; direction, detent count, button debounce, audible feedback, and operation during Modbus traffic remain to be hardware-tested.
 - D5 startup melody, three synchronized flashes, periodic HEARTBEAT and sound arbitration have passed user-reported hardware verification (CHECKPOINT-47D). Current PROGMEM-optimized build: 19,686 bytes Flash (64%), 1,500 bytes global SRAM (73%), 548 bytes remaining. Complete Modbus regression and repeated traffic passed without hangs (CHECKPOINT-47C). The original cause of the earlier hang remains unproven.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile and upload the encoder input test. Verify direction, exactly one logical step per detent, debounced button press/release, then repeat the Modbus regression and OLED/indicator checks. Preserve the verified baseline.
+Compile and upload the encoder sound-feedback revision. Verify one short sound per detected rotation step, a distinct sound on button press, no sound on release, then repeat the Modbus regression and OLED/indicator checks. Preserve the verified baseline.
 
 ### BLOCKERS
 
-SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The user confirmed that incremental OLED row refresh removed the observed flicker. The revised OLED layout, 120-second sleep/wake and normal Modbus operation have passed user-reported compile and hardware verification. D5 startup melody, three flashes, periodic HEARTBEAT and sound arbitration are hardware-verified (CHECKPOINT-47D). CHECKPOINT-47B PROGMEM optimization compiles at 19,686 bytes Flash / 1,500 bytes global SRAM / 548 bytes remaining; complete Modbus regression and repeated traffic passed without hangs (CHECKPOINT-47C). Encoder input remains unimplemented. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. The last accepted build left 435 bytes of SRAM; remeasure after the D5 change.
+SERVICE-free compilation and the reported FC01/02/03/04/05/06/15/16 regression passed. The user confirmed that incremental OLED row refresh removed the observed flicker. The revised OLED layout, 120-second sleep/wake and normal Modbus operation have passed user-reported compile and hardware verification. D5 startup melody, three flashes, periodic HEARTBEAT and sound arbitration are hardware-verified (CHECKPOINT-47D). CHECKPOINT-47B PROGMEM optimization compiles at 19,686 bytes Flash / 1,500 bytes global SRAM / 548 bytes remaining; complete Modbus regression and repeated traffic passed without hangs (CHECKPOINT-47C). Encoder input and sound-feedback source are implemented; hardware verification remains pending. Invalid-CRC recovery and RX/TX/ERROR indication after SERVICE removal remain unconfirmed. The last accepted build left 435 bytes of SRAM; remeasure after the D5 change.
