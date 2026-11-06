@@ -8,7 +8,7 @@ U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(U8X8_PIN_NONE);
 
 namespace {
 
-  const unsigned long DISPLAY_SLEEP_TIMEOUT = 30000UL;
+  const unsigned long DISPLAY_SLEEP_TIMEOUT = 120000UL;
 
   bool displayReady = false;
   bool displaySleeping = false;
@@ -190,7 +190,7 @@ namespace {
     }
 
     line[pos] = '\0';
-    drawRow(1, line);
+    drawRow(2, line);
   }
 
   void drawRate(uint32_t requests, uint32_t responses) {
@@ -253,7 +253,7 @@ namespace {
       line[pos++] = missedText[i];
     }
     line[pos] = 0;
-    drawRow(2, line);
+    drawRow(6, line);
   }
 
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
@@ -263,6 +263,7 @@ namespace {
     u8x8.clearDisplay();
     drawRow(0, "CommTester v0.4");
 
+    drawRow(1, "");
     drawAddressPair(slaveId, masterId);
     drawErrorMissed(errors, missed);
     drawFunction(functionCode);
