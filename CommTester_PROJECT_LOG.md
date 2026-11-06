@@ -1691,3 +1691,51 @@ Compile and upload this revision, then perform the encoder sound-feedback accept
 - Compilation: PENDING.
 - Encoder and sound hardware verification: PENDING.
 - Modbus regression after this change: PENDING.
+
+
+## CHECKPOINT-49A — Encoder sound feedback compile and hardware check PASS
+
+### BUILD RESULT — USER-REPORTED FACT
+
+The user compiled the CHECKPOINT-49 sound-feedback revision for Arduino Nano / ATmega328P and reported:
+
+- Flash: **20,532 bytes (66% of 30,720 bytes)**.
+- Global SRAM: **1,506 bytes (73% of 2,048 bytes)**.
+- Compiler-reported remaining SRAM: **542 bytes**.
+- Compilation: **PASS**.
+
+Compared with CHECKPOINT-48 (20,492 bytes Flash / 1,502 bytes global SRAM / 546 bytes remaining):
+
+- Flash: +40 bytes.
+- Global SRAM: +4 bytes.
+- Compiler-reported remaining SRAM: −4 bytes.
+
+### HARDWARE TEST — USER-REPORTED
+
+The user confirmed that the encoder sound check passed. The audible feedback for encoder interaction is therefore accepted as **PASS**.
+
+The user had also reported that encoder rotation and button interaction did not interfere with Modbus packet reception on the preceding encoder-input build. This observation is retained, but a complete Modbus regression specifically after the sound-feedback change has not been reported.
+
+### ACCEPTANCE STATUS
+
+- Arduino Nano compilation: **PASS**.
+- Flash/SRAM measurement: **PASS**.
+- Encoder sound feedback: **PASS**.
+- Exact one-event-per-detent CW/CCW count: **NOT YET CONFIRMED**.
+- Button debounce / one transition per press and release: **NOT YET CONFIRMED**.
+- Full FC01/02/03/04/05/06/15/16 regression after this change: **PENDING**.
+- OLED and all indicator regression after this change: **PENDING**.
+
+### DECISION
+
+- Accept the shared-queue sound implementation as the current baseline.
+- Do not adjust sound frequencies or durations without a concrete usability issue.
+- Do not add menu behavior yet; first close the remaining encoder input and regression checks.
+
+### NEXT STEP
+
+Verify exact CW/CCW event counts and stable button transitions, then run the complete Modbus regression and confirm OLED/indicator behavior.
+
+### RESOURCE NOTE
+
+The compiler reports 542 bytes of remaining SRAM. This is compiler-reported free SRAM, not a measurement of worst-case runtime stack margin. Avoid unnecessary global buffers and large local variables.
