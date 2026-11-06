@@ -1318,3 +1318,37 @@ CHECKPOINT-47 — inspect current GitHub pin usage and implement the minimum enc
 ### BLOCKERS
 
 No blocker for closing the display milestone. Encoder pin compatibility and input handling remain to be verified from the current repository source before implementation.
+
+
+## CHECKPOINT-47 — Startup indication and encoder plan (decision accepted; implementation pending)
+
+### DECISIONS
+
+- Reassign the previously unused D5 indicator LED as a HEARTBEAT indicator.
+- On startup, D5 will produce three short flashes synchronized with a short three-note ascending startup melody.
+- Proposed melody: 523 Hz for 100 ms, 659 Hz for 100 ms, and 784 Hz for 180 ms, with approximately 40 ms gaps.
+- In normal operation, D5 will flash briefly (approximately 50–80 ms) every 2 seconds.
+- The startup melody plays once per power-up only.
+- All indication timing must be non-blocking; no `delay()` calls may be introduced.
+- Reuse the existing `Indicators` event/sound mechanism and `tone()` handling. Do not add an independent sound generator that could conflict with RX/TX/ERROR sounds.
+- The encoder module has external pull-ups to +5 V. Planned wiring remains CLK/A=D8, DT/B=D9, SW=D7, +5 V and GND. Configure the signal pins as `INPUT` (not `INPUT_PULLUP`) and treat a closed contact as active LOW; implement software debounce.
+
+### STATUS / SCOPE
+
+- This is an accepted design decision, not an implementation or hardware PASS.
+- Before coding, re-fetch the current indicator and main-sketch sources and inspect all pin references for D5/D7/D8/D9 conflicts.
+- Implement and test the D5 heartbeat/startup indication first, independently of encoder decoding.
+- Then implement the minimal encoder input test: direction, one logical step per detent, button press/release debounce, and no regression in Modbus/OLED operation.
+
+### TEST CRITERIA
+
+- Startup: exactly three short D5 flashes synchronized with the three-note melody; melody occurs only once.
+- Normal operation: one short D5 flash at approximately 2-second intervals.
+- Non-blocking behavior: Modbus request/response processing continues during startup indication and normal heartbeat.
+- Sound arbitration: RX/TX/ERROR events remain correctly serialized and are not truncated or overlapped by the startup melody.
+- No regression in OLED refresh, sleep/wake, or existing Modbus behavior.
+
+### BLOCKERS
+
+- Pin conflict review and implementation are pending.
+- The melody and heartbeat have not yet been compiled or tested on hardware.
