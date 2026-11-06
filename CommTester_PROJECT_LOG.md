@@ -1780,3 +1780,40 @@ Run the full Modbus function regression (FC01/02/03/04/05/06/15/16), followed by
 - Encoder operation during active Modbus traffic: **PASS**.
 - Button press/release reporting: **PASS**.
 - Full post-change regression: **PENDING**.
+
+
+## CHECKPOINT-50 — Full regression after encoder integration PASS
+
+### USER-REPORTED TEST — FACT
+
+The user reports successful completion of the full regression requested after the encoder sound-feedback change:
+
+- Modbus Slave function regression FC01/02/03/04/05/06/15/16: **PASS**.
+- OLED behavior checks: **PASS**.
+- RX/TX/ERROR and HEARTBEAT indicator checks: **PASS**.
+- No regression was observed in the tested behavior.
+
+This checkpoint records the user's overall PASS report. Individual test logs, exact traffic duration and detailed OLED/indicator observations were not supplied and are not independently asserted here.
+
+### PREVIOUS ENCODER ACCEPTANCE
+
+- Exactly 20 CW events for 20 clockwise detents and 20 CCW events for 20 counter-clockwise detents: **PASS** (CHECKPOINT-49B).
+- Encoder continued to register rotation during active Modbus traffic: **PASS** (CHECKPOINT-49B).
+- Button press/release reporting and encoder sound feedback: **PASS** (CHECKPOINT-49A/49B).
+
+### DECISION
+
+- Accept the current Nano firmware, including encoder input and sound feedback, as the working baseline.
+- Do not change the Modbus, OLED refresh, sleep/wake or indicator implementations while adding menu navigation unless a reproducible regression requires it.
+- Begin the menu milestone as a separate UI/navigation layer.
+
+### NEXT STEP
+
+Define the minimal menu interaction model for the existing 128×64 U8X8 OLED and KY-040 encoder. Then implement and test navigation without changing Modbus behavior.
+
+### STATUS
+
+- Encoder acceptance: **PASS**.
+- Full requested post-encoder regression: **PASS**, user-reported.
+- Menu architecture and interaction specification: **NEXT**.
+- Menu implementation: **NOT STARTED**.
