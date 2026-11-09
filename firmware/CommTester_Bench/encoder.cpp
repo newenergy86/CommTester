@@ -24,6 +24,7 @@ namespace {
   bool longPressReported = false;
 
   bool clickPending = false;
+  bool secondClickInProgress = false;
   unsigned long firstClickReleasedAt = 0;
 
   int8_t pendingRotation = 0;
@@ -49,6 +50,7 @@ void Encoder::begin() {
   buttonPressStarted = millis();
   longPressReported = false;
   clickPending = false;
+  secondClickInProgress = false;
 
   pendingRotation = 0;
   pendingButtonEvent = BUTTON_NONE;
@@ -89,21 +91,25 @@ void Encoder::update() {
       Indicators::encoderPress();
       buttonPressStarted = now;
       longPressReported = false;
+      secondClickInProgress =
+        clickPending && (now - firstClickReleasedAt) <= DOUBLE_CLICK_MS;
     } else {
       Serial.println(F("ENC: BUTTON RELEASED"));
 
       if (!longPressReported) {
-        if (clickPending &&
-            (now - firstClickReleasedAt) <= DOUBLE_CLICK_MS) {
+        if (secondClickInProgress) {
           clickPending = false;
+          secondClickInProgress = false;
           queueButtonEvent(BUTTON_DOUBLE);
           Serial.println(F("ENC: DOUBLE CLICK"));
         } else {
-          // A previous click whose window expired is delivered below.
-          // This release starts a new click candidate.
+          // This release starts a new click candidate. A second press
+          // beginning inside the interval completes a double click.
           clickPending = true;
           firstClickReleasedAt = now;
         }
+      } else {
+        secondClickInProgress = false;
       }
     }
   }
@@ -113,12 +119,14 @@ void Encoder::update() {
       (now - buttonPressStarted) >= LONG_PRESS_MS) {
     longPressReported = true;
     clickPending = false;
+    secondClickInProgress = false;
     queueButtonEvent(BUTTON_LONG);
     Serial.println(F("ENC: LONG PRESS"));
   }
 
   // Defer a short-click event until the double-click window has elapsed.
-  if (clickPending && (now - firstClickReleasedAt) > DOUBLE_CLICK_MS) {
+  if (clickPending && !secondClickInProgress &&
+      (now - firstClickReleasedAt) > DOUBLE_CLICK_MS) {
     clickPending = false;
     queueButtonEvent(BUTTON_SHORT);
     Serial.println(F("ENC: SHORT CLICK"));
