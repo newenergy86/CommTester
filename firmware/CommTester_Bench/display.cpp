@@ -1,4 +1,5 @@
 #include "display.h"
+#include "settings.h"
 
 #include <Arduino.h>
 #include <U8x8lib.h>
@@ -22,12 +23,19 @@ namespace {
   uint32_t displayedTx = 0;
   uint32_t displayedErrors = 0;
   uint32_t missedCache = 0;
+  uint8_t displayedBaudIndex = 3;
+
+  // Inline editor state; no separate menu screen is used.
+  uint8_t selectedSetting = 0; // 0 = Slave ID, 1 = baud rate
+  bool editingSetting = false;
+  bool uiTouched = false;
+  uint8_t editSlaveId = 1;
+  uint8_t editBaudIndex = 3;
 
   // Immutable UI strings are kept in program Flash, not copied to SRAM.
   const char TEXT_HEADER[] PROGMEM = "CommTester v0.4";
   const char TEXT_EMPTY[] PROGMEM = "";
   const char TEXT_NO_FUNCTION[] PROGMEM = "FC:--";
-  const char TEXT_SERIAL[] PROGMEM = "9600 8N1";
   const char DESC_UNKNOWN[] PROGMEM = "UNKNOWN";
   const char DESC_READ_COIL[] PROGMEM = "READ COIL";
   const char DESC_READ_DI[] PROGMEM = "READ DI";
@@ -290,20 +298,47 @@ namespace {
     drawRow(6, line);
   }
 
+  void drawUiStatus() {
+    if (!uiTouched) {
+      drawRow_P(1, TEXT_EMPTY);
+      return;
+    }
+
+    if (editingSetting) {
+      drawRow(1, selectedSetting == 0 ? "EDIT: SLAVE ID" : "EDIT: BAUD RATE");
+    } else {
+      drawRow(1, selectedSetting == 0 ? "SEL: SLAVE ID" : "SEL: BAUD RATE");
+    }
+  }
+
+  void drawBaud(uint8_t index) {
+    char line[17] = "BAUD:";
+    uint8_t pos = 5;
+
+    appendUnsigned(line, pos, Settings::getBaudForIndex(index));
+    line[pos++] = ' ';
+    line[pos++] = '8';
+    line[pos++] = 'N';
+    line[pos++] = '1';
+    line[pos] = '\0';
+    drawRow(7, line);
+  }
+
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
                        uint8_t functionCode,
                        uint32_t rx, uint32_t tx,
-                       uint32_t errors, uint32_t missed) {
+                       uint32_t errors, uint32_t missed,
+                       uint8_t baudIndex) {
     u8x8.clearDisplay();
     drawRow_P(0, TEXT_HEADER);
 
-    drawRow_P(1, TEXT_EMPTY);
-    drawAddressPair(slaveId, masterId);
+    drawUiStatus();
+    drawAddressPair(visibleSlaveId, masterId);
     drawErrorMissed(errors, missed);
     drawFunction(functionCode);
     drawTraffic(rx, tx);
     drawRate(rx, tx);
-    drawRow_P(7, TEXT_SERIAL);
+    drawBaud(baudIndex);
   }
 
 }
@@ -322,11 +357,18 @@ void Display::begin() {
   displayedRx = 0;
   displayedTx = 0;
   displayedErrors = 0;
+  displayedBaudIndex = 3;
+  selectedSetting = 0;
+  editingSetting = false;
+  uiTouched = false;
+  editSlaveId = 1;
+  editBaudIndex = 3;
 
   // The only full-screen draw: initial display setup.
   drawSlaveScreen(displayedSlaveId, displayedMasterId,
                   displayedFunctionCode, displayedRx,
-                  displayedTx, displayedErrors, missedCache);
+                  displayedTx, displayedErrors, missedCache,
+                  displayedBaudIndex);
 }
 
 void Display::activity() {
@@ -345,16 +387,82 @@ void Display::activity() {
   }
 }
 
+uint8_t Display::handleEncoder(int8_t rotation, bool buttonPressed,
+                               uint8_t currentSlaveId, uint8_t currentBaudIndex,
+                               uint8_t &newSlaveId, uint8_t &newBaudIndex) {
+  uint8_t changed = 0;
+  newSlaveId = currentSlaveId;
+  newBaudIndex = currentBaudIndex;
+
+  if (rotation != 0) {
+    Display::activity();
+    uiTouched = true;
+
+    if (editingSetting) {
+      if (selectedSetting == 0) {
+        if (rotation > 0) {
+          editSlaveId = (editSlaveId >= 247) ? 1 : editSlaveId + 1;
+        } else {
+          editSlaveId = (editSlaveId <= 1) ? 247 : editSlaveId - 1;
+        }
+      } else {
+        if (rotation > 0) {
+          editBaudIndex = (editBaudIndex >= 4) ? 0 : editBaudIndex + 1;
+        } else {
+          editBaudIndex = (editBaudIndex == 0) ? 4 : editBaudIndex - 1;
+        }
+      }
+    } else {
+      selectedSetting = (selectedSetting == 0) ? 1 : 0;
+    }
+  }
+
+  if (buttonPressed) {
+    Display::activity();
+    uiTouched = true;
+
+    if (!editingSetting) {
+      editSlaveId = currentSlaveId;
+      editBaudIndex = currentBaudIndex;
+      editingSetting = true;
+    } else {
+      editingSetting = false;
+
+      if (editSlaveId != currentSlaveId) {
+        newSlaveId = editSlaveId;
+        changed |= CHANGE_SLAVE_ID;
+      }
+      if (editBaudIndex != currentBaudIndex) {
+        newBaudIndex = editBaudIndex;
+        changed |= CHANGE_BAUD;
+      }
+    }
+  }
+
+  if (displayReady && !displaySleeping && !displayNeedsRedraw) {
+    drawUiStatus();
+  }
+
+  return changed;
+}
+
 void Display::update(uint8_t slaveId, uint8_t masterId,
                      uint8_t functionCode,
                      uint32_t rx, uint32_t tx,
-                     uint32_t errors, uint32_t missed) {
+                     uint32_t errors, uint32_t missed,
+                     uint8_t baudIndex) {
   if (!displayReady) {
     return;
   }
 
+  const uint8_t visibleSlaveId =
+    (editingSetting && selectedSetting == 0) ? editSlaveId : slaveId;
+  const uint8_t visibleBaudIndex =
+    (editingSetting && selectedSetting == 1) ? editBaudIndex : baudIndex;
+
   const bool addressesChanged =
-    (slaveId != displayedSlaveId) || (masterId != displayedMasterId);
+    (visibleSlaveId != displayedSlaveId) || (masterId != displayedMasterId);
+  const bool baudChanged = (visibleBaudIndex != displayedBaudIndex);
   const bool functionChanged =
     (functionCode != displayedFunctionCode);
   const bool countersChanged =
@@ -363,29 +471,31 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
 
   // Keep the cached data current while the physical display is asleep.
   if (displaySleeping) {
-    displayedSlaveId = slaveId;
+    displayedSlaveId = visibleSlaveId;
     displayedMasterId = masterId;
     displayedFunctionCode = functionCode;
     displayedRx = rx;
     displayedTx = tx;
     displayedErrors = errors;
     missedCache = missed;
+    displayedBaudIndex = visibleBaudIndex;
     return;
   }
 
   // Wake-up is requested from the receive path. Redraw only here, using
   // the complete statistics snapshot collected after frame processing.
   if (displayNeedsRedraw) {
-    drawSlaveScreen(slaveId, masterId, functionCode,
-                    rx, tx, errors, missed);
+    drawSlaveScreen(visibleSlaveId, masterId, functionCode,
+                    rx, tx, errors, missed, visibleBaudIndex);
 
-    displayedSlaveId = slaveId;
+    displayedSlaveId = visibleSlaveId;
     displayedMasterId = masterId;
     displayedFunctionCode = functionCode;
     displayedRx = rx;
     displayedTx = tx;
     displayedErrors = errors;
     missedCache = missed;
+    displayedBaudIndex = visibleBaudIndex;
     displayNeedsRedraw = false;
     return;
   }
@@ -404,13 +514,18 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     drawErrorMissed(errors, missed);
   }
 
-  displayedSlaveId = slaveId;
+  if (baudChanged) {
+    drawBaud(visibleBaudIndex);
+  }
+
+  displayedSlaveId = visibleSlaveId;
   displayedMasterId = masterId;
   displayedFunctionCode = functionCode;
   displayedRx = rx;
   displayedTx = tx;
   displayedErrors = errors;
   missedCache = missed;
+  displayedBaudIndex = visibleBaudIndex;
 
   if (millis() - lastActivityTime >= DISPLAY_SLEEP_TIMEOUT) {
     u8x8.setPowerSave(1);
