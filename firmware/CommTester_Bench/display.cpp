@@ -28,6 +28,7 @@ namespace {
   // Inline editor state; no separate menu screen is used.
   uint8_t selectedSetting = 0; // 0 = Slave ID, 1 = baud rate
   bool editingSetting = false;
+  bool changingValue = false;
   bool uiTouched = false;
   uint8_t editSlaveId = 1;
   uint8_t editBaudIndex = 3;
@@ -299,15 +300,15 @@ namespace {
   }
 
   void drawUiStatus() {
-    if (!uiTouched) {
+    if (!editingSetting) {
       drawRow_P(1, TEXT_EMPTY);
       return;
     }
 
-    if (editingSetting) {
-      drawRow(1, selectedSetting == 0 ? "EDIT: SLAVE ID" : "EDIT: BAUD RATE");
+    if (changingValue) {
+      drawRow(1, selectedSetting == 0 ? "VAL: SLAVE ID" : "VAL: BAUD RATE");
     } else {
-      drawRow(1, selectedSetting == 0 ? "SEL: SLAVE ID" : "SEL: BAUD RATE");
+      drawRow(1, selectedSetting == 0 ? "EDIT: SLAVE ID" : "EDIT: BAUD RATE");
     }
   }
 
@@ -360,6 +361,7 @@ void Display::begin() {
   displayedBaudIndex = 3;
   selectedSetting = 0;
   editingSetting = false;
+  changingValue = false;
   uiTouched = false;
   editSlaveId = 1;
   editBaudIndex = 3;
@@ -387,56 +389,86 @@ void Display::activity() {
   }
 }
 
-uint8_t Display::handleEncoder(int8_t rotation, bool buttonPressed,
+uint8_t Display::handleEncoder(int8_t rotation, Encoder::ButtonEvent buttonEvent,
                                uint8_t currentSlaveId, uint8_t currentBaudIndex,
                                uint8_t &newSlaveId, uint8_t &newBaudIndex) {
   uint8_t changed = 0;
   newSlaveId = currentSlaveId;
   newBaudIndex = currentBaudIndex;
 
-  if (rotation != 0) {
-    Display::activity();
-    uiTouched = true;
-
-    if (editingSetting) {
-      if (selectedSetting == 0) {
-        if (rotation > 0) {
-          editSlaveId = (editSlaveId >= 247) ? 1 : editSlaveId + 1;
-        } else {
-          editSlaveId = (editSlaveId <= 1) ? 247 : editSlaveId - 1;
-        }
-      } else {
-        if (rotation > 0) {
-          editBaudIndex = (editBaudIndex >= 4) ? 0 : editBaudIndex + 1;
-        } else {
-          editBaudIndex = (editBaudIndex == 0) ? 4 : editBaudIndex - 1;
-        }
-      }
-    } else {
-      selectedSetting = (selectedSetting == 0) ? 1 : 0;
-    }
-  }
-
-  if (buttonPressed) {
-    Display::activity();
-    uiTouched = true;
-
-    if (!editingSetting) {
+  // Outside the editor, rotation and short press have no UI action.
+  // A long press opens the editor; a double click resets traffic counters.
+  if (!editingSetting) {
+    if (buttonEvent == Encoder::BUTTON_LONG) {
+      Display::activity();
+      editingSetting = true;
+      changingValue = false;
+      uiTouched = true;
+      selectedSetting = 0;
       editSlaveId = currentSlaveId;
       editBaudIndex = currentBaudIndex;
-      editingSetting = true;
-    } else {
-      editingSetting = false;
+    } else if (buttonEvent == Encoder::BUTTON_DOUBLE) {
+      Display::activity();
+      changed |= RESET_TRAFFIC;
+    }
+  } else {
+    // Inside the editor, rotation selects a parameter or changes its
+    // staged value depending on the current editor sub-state.
+    if (rotation != 0) {
+      Display::activity();
+      uiTouched = true;
 
-      if (editSlaveId != currentSlaveId) {
-        newSlaveId = editSlaveId;
-        changed |= CHANGE_SLAVE_ID;
-      }
-      if (editBaudIndex != currentBaudIndex) {
-        newBaudIndex = editBaudIndex;
-        changed |= CHANGE_BAUD;
+      if (changingValue) {
+        if (selectedSetting == 0) {
+          if (rotation > 0) {
+            editSlaveId = (editSlaveId >= 247) ? 1 : editSlaveId + 1;
+          } else {
+            editSlaveId = (editSlaveId <= 1) ? 247 : editSlaveId - 1;
+          }
+        } else {
+          if (rotation > 0) {
+            editBaudIndex = (editBaudIndex >= 4) ? 0 : editBaudIndex + 1;
+          } else {
+            editBaudIndex = (editBaudIndex == 0) ? 4 : editBaudIndex - 1;
+          }
+        }
+      } else {
+        selectedSetting = (selectedSetting == 0) ? 1 : 0;
       }
     }
+
+    if (buttonEvent == Encoder::BUTTON_SHORT) {
+      Display::activity();
+      uiTouched = true;
+
+      if (!changingValue) {
+        // Enter value adjustment for the currently selected parameter.
+        editSlaveId = currentSlaveId;
+        editBaudIndex = currentBaudIndex;
+        changingValue = true;
+      } else {
+        // Confirm only the selected parameter. The other staged value is
+        // never committed implicitly.
+        changingValue = false;
+        if (selectedSetting == 0 && editSlaveId != currentSlaveId) {
+          newSlaveId = editSlaveId;
+          changed |= CHANGE_SLAVE_ID;
+        } else if (selectedSetting == 1 && editBaudIndex != currentBaudIndex) {
+          newBaudIndex = editBaudIndex;
+          changed |= CHANGE_BAUD;
+        }
+      }
+    } else if (buttonEvent == Encoder::BUTTON_LONG) {
+      // Long press exits the editor. Any currently unconfirmed value is
+      // discarded; previously confirmed settings remain saved.
+      Display::activity();
+      editingSetting = false;
+      changingValue = false;
+      uiTouched = false;
+      editSlaveId = currentSlaveId;
+      editBaudIndex = currentBaudIndex;
+    }
+    // BUTTON_DOUBLE intentionally has no action while editing.
   }
 
   if (displayReady && !displaySleeping && !displayNeedsRedraw) {
@@ -456,9 +488,9 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   }
 
   const uint8_t visibleSlaveId =
-    (editingSetting && selectedSetting == 0) ? editSlaveId : slaveId;
+    (changingValue && selectedSetting == 0) ? editSlaveId : slaveId;
   const uint8_t visibleBaudIndex =
-    (editingSetting && selectedSetting == 1) ? editBaudIndex : baudIndex;
+    (changingValue && selectedSetting == 1) ? editBaudIndex : baudIndex;
 
   const bool addressesChanged =
     (visibleSlaveId != displayedSlaveId) || (masterId != displayedMasterId);
