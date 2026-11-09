@@ -18,6 +18,9 @@ namespace {
   bool buttonStableState = HIGH;
   bool buttonLastReading = HIGH;
   unsigned long buttonLastChange = 0;
+
+  int8_t pendingRotation = 0;
+  bool pendingButtonPress = false;
 }
 
 void Encoder::begin() {
@@ -29,6 +32,9 @@ void Encoder::begin() {
   buttonLastReading = buttonStableState;
   buttonLastChange = millis();
 
+  pendingRotation = 0;
+  pendingButtonPress = false;
+
   Serial.println(F("Encoder input test ready"));
 }
 
@@ -39,10 +45,12 @@ void Encoder::update() {
     Serial.println(F("ENC: CW"));
     Indicators::encoderStep();
     Display::activity();
+    pendingRotation = 1;
   } else if (rotation == KY040::COUNTERCLOCKWISE) {
     Serial.println(F("ENC: CCW"));
     Indicators::encoderStep();
     Display::activity();
+    pendingRotation = -1;
   }
 
   const bool reading = digitalRead(ENCODER_SW);
@@ -61,8 +69,25 @@ void Encoder::update() {
     if (buttonStableState == LOW) {
       Serial.println(F("ENC: BUTTON PRESSED"));
       Indicators::encoderPress();
+      pendingButtonPress = true;
     } else {
       Serial.println(F("ENC: BUTTON RELEASED"));
     }
   }
+}
+
+bool Encoder::takeRotation(int8_t &direction) {
+  if (pendingRotation == 0) {
+    return false;
+  }
+
+  direction = pendingRotation;
+  pendingRotation = 0;
+  return true;
+}
+
+bool Encoder::takeButtonPress() {
+  const bool pressed = pendingButtonPress;
+  pendingButtonPress = false;
+  return pressed;
 }
