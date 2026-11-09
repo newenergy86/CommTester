@@ -21,6 +21,7 @@ namespace {
   uint8_t displayedFunctionCode = 0;
   uint32_t displayedRx = 0;
   uint32_t displayedTx = 0;
+  uint32_t displayedRateRequests = 0;
   uint32_t displayedErrors = 0;
   uint32_t missedCache = 0;
   uint8_t displayedBaudIndex = 3;
@@ -34,7 +35,7 @@ namespace {
   uint8_t editBaudIndex = 3;
 
   // Immutable UI strings are kept in program Flash, not copied to SRAM.
-  const char TEXT_HEADER[] PROGMEM = "CommTester v0.4";
+  const char TEXT_HEADER[] PROGMEM = "CommTester SLAVE";
   const char TEXT_EMPTY[] PROGMEM = "";
   const char TEXT_NO_FUNCTION[] PROGMEM = "FC:--";
   const char DESC_UNKNOWN[] PROGMEM = "UNKNOWN";
@@ -328,6 +329,7 @@ namespace {
   void drawSlaveScreen(uint8_t slaveId, uint8_t masterId,
                        uint8_t functionCode,
                        uint32_t rx, uint32_t tx,
+                       uint32_t rateRequests,
                        uint32_t errors, uint32_t missed,
                        uint8_t baudIndex) {
     u8x8.clearDisplay();
@@ -338,7 +340,7 @@ namespace {
     drawErrorMissed(errors, missed);
     drawFunction(functionCode);
     drawTraffic(rx, tx);
-    drawRate(rx, tx);
+    drawRate(rateRequests, tx);
     drawBaud(baudIndex);
   }
 
@@ -357,6 +359,7 @@ void Display::begin() {
   displayedFunctionCode = 0;
   displayedRx = 0;
   displayedTx = 0;
+  displayedRateRequests = 0;
   displayedErrors = 0;
   displayedBaudIndex = 3;
   selectedSetting = 0;
@@ -369,8 +372,8 @@ void Display::begin() {
   // The only full-screen draw: initial display setup.
   drawSlaveScreen(displayedSlaveId, displayedMasterId,
                   displayedFunctionCode, displayedRx,
-                  displayedTx, displayedErrors, missedCache,
-                  displayedBaudIndex);
+                  displayedTx, displayedRateRequests,
+                  displayedErrors, missedCache, displayedBaudIndex);
 }
 
 void Display::activity() {
@@ -481,6 +484,7 @@ uint8_t Display::handleEncoder(int8_t rotation, Encoder::ButtonEvent buttonEvent
 void Display::update(uint8_t slaveId, uint8_t masterId,
                      uint8_t functionCode,
                      uint32_t rx, uint32_t tx,
+                     uint32_t rateRequests,
                      uint32_t errors, uint32_t missed,
                      uint8_t baudIndex) {
   if (!displayReady) {
@@ -499,6 +503,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     (functionCode != displayedFunctionCode);
   const bool countersChanged =
     (rx != displayedRx) || (tx != displayedTx) ||
+    (rateRequests != displayedRateRequests) ||
     (errors != displayedErrors) || (missed != missedCache);
 
   // Keep the cached data current while the physical display is asleep.
@@ -508,6 +513,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
     displayedFunctionCode = functionCode;
     displayedRx = rx;
     displayedTx = tx;
+    displayedRateRequests = rateRequests;
     displayedErrors = errors;
     missedCache = missed;
     displayedBaudIndex = visibleBaudIndex;
@@ -518,13 +524,14 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   // the complete statistics snapshot collected after frame processing.
   if (displayNeedsRedraw) {
     drawSlaveScreen(visibleSlaveId, masterId, functionCode,
-                    rx, tx, errors, missed, visibleBaudIndex);
+                    rx, tx, rateRequests, errors, missed, visibleBaudIndex);
 
     displayedSlaveId = visibleSlaveId;
     displayedMasterId = masterId;
     displayedFunctionCode = functionCode;
     displayedRx = rx;
     displayedTx = tx;
+    displayedRateRequests = rateRequests;
     displayedErrors = errors;
     missedCache = missed;
     displayedBaudIndex = visibleBaudIndex;
@@ -542,7 +549,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
 
   if (countersChanged) {
     drawTraffic(rx, tx);
-    drawRate(rx, tx);
+    drawRate(rateRequests, tx);
     drawErrorMissed(errors, missed);
   }
 
@@ -555,6 +562,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   displayedFunctionCode = functionCode;
   displayedRx = rx;
   displayedTx = tx;
+  displayedRateRequests = rateRequests;
   displayedErrors = errors;
   missedCache = missed;
   displayedBaudIndex = visibleBaudIndex;
