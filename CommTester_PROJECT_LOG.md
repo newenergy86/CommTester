@@ -1972,3 +1972,81 @@ The user explicitly confirmed the following control behavior:
 - RX/TX reset integration: **IMPLEMENTED**.
 - GitHub source and documentation read-back: **PASS**.
 - Compile, memory measurement and hardware acceptance: **PENDING**.
+
+
+## CHECKPOINT-53 — RATE denominator separated from total RX; OLED identifies Slave mode
+
+### USER-APPROVED CHANGE
+
+The user approved two focused changes:
+1. RATE must not fall when the Modbus master polls other Slave IDs or sends broadcast requests.
+2. The OLED title must identify the active Nano operating mode.
+
+### CHANGE
+
+- Added the internal `rateRequestCount` counter.
+- Increment it only after a successful RTU receive and CRC validation, and only when the destination address equals the configured local Slave ID.
+- Increment occurs before request-length validation. Therefore, a CRC-valid malformed request addressed to this Slave counts as an attempt and lowers RATE if no response is transmitted.
+- Foreign destination IDs and broadcast address 0 are excluded from the RATE denominator.
+- RX semantics are unchanged: every completed receive event, including CRC/framing errors, still increments RX.
+- TX semantics are unchanged: TX increments only when the response is successfully handed to the serial transport.
+- RATE is now `TX / rateRequestCount × 100%`; a zero denominator displays the existing no-sample marker.
+- Double-click reset clears RX, TX and `rateRequestCount`; ERR and MISS remain unchanged.
+- The OLED header is now `CommTester SLAVE` (16 characters).
+- The counter is passed through the existing display-data interface and cached for incremental OLED redraw.
+- No external library, protocol handler, serial transport, pin assignment or encoder behavior was changed.
+
+### RATE SEMANTICS
+
+- **RX:** all completed receive events on the line.
+- **TX:** successfully transmitted Slave responses.
+- **RATE denominator:** CRC-valid frames addressed to the configured local Slave ID, including malformed local requests.
+- **Excluded from RATE denominator:** CRC/framing failures, foreign destination IDs and broadcast address 0.
+- **ERR/MISS:** existing classification is unchanged. In particular, malformed frames are ERR; valid structurally complete requests for foreign/broadcast IDs are MISS.
+
+### SOURCE STATUS
+
+- Fresh GitHub source was fetched before each file update.
+- Updated source files:
+  - `firmware/CommTester_Bench/modbus_slave.cpp`
+  - `firmware/CommTester_Bench/modbus_slave.h`
+  - `firmware/CommTester_Bench/display.cpp`
+  - `firmware/CommTester_Bench/display.h`
+  - `firmware/CommTester_Bench/CommTester_Bench.ino`
+- `PROJECT.md` and this project log were updated.
+- Every changed file was fetched back immediately after its write and compared byte-for-byte with the submitted content: **PASS**.
+- External libraries were not modified.
+
+### TEST
+
+- GitHub source updates: **PASS**.
+- Exact post-write read-back verification: **PASS**.
+- Arduino Nano / ATmega328P compilation: **PENDING**.
+- Flash/SRAM measurement: **PENDING**.
+- Hardware RATE behavior for local, foreign, broadcast and malformed local requests: **PENDING**.
+- Double-click reset with ERR/MISS retention: **PENDING**.
+- OLED title visibility: **PENDING**.
+- Full Modbus FC01/02/03/04/05/06/15/16 and OLED/encoder/indicator regression: **PENDING**.
+
+### ACCEPTANCE TEST
+
+1. Compile for Arduino Nano / ATmega328P with the existing library set; record Flash/SRAM.
+2. Poll the configured local Slave repeatedly with valid requests. If every response is transmitted, RATE should show 100.0%.
+3. Poll one or more foreign Slave IDs. RX and MISS should increase; RATE should remain unchanged.
+4. Send broadcast address 0 requests. RX and MISS should increase; RATE should remain unchanged.
+5. Send a CRC-valid malformed request addressed to the local Slave. ERR and the RATE denominator should increase; if no response is sent, RATE should decrease.
+6. Send a bad-CRC frame. RX and ERR should increase; RATE denominator should not change.
+7. Double-click outside the editor. RX, TX and RATE denominator should reset; ERR and MISS should retain their previous values; RATE should show no sample until a new local request arrives.
+8. Confirm the OLED title reads exactly `CommTester SLAVE`.
+9. Run the complete FC01/02/03/04/05/06/15/16 regression and confirm OLED refresh/sleep/wake, encoder gestures/sounds and RX/TX/ERROR/HEARTBEAT indications.
+
+### NEXT STEP
+
+Compile and upload CHECKPOINT-53, then perform the acceptance tests above. Do not make further changes until the results are known.
+
+### STATUS
+
+- RATE accounting source: **IMPLEMENTED**.
+- OLED Slave title source: **IMPLEMENTED**.
+- GitHub write/read-back verification: **PASS**.
+- Compilation, memory measurement and hardware acceptance: **PENDING**.
