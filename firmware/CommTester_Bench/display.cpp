@@ -333,7 +333,7 @@ namespace {
     drawRow_P(0, TEXT_HEADER);
 
     drawUiStatus();
-    drawAddressPair(visibleSlaveId, masterId);
+    drawAddressPair(slaveId, masterId);
     drawErrorMissed(errors, missed);
     drawFunction(functionCode);
     drawTraffic(rx, tx);
@@ -501,7 +501,7 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   }
 
   if (addressesChanged) {
-    drawAddressPair(slaveId, masterId);
+    drawAddressPair(visibleSlaveId, masterId);
   }
 
   if (functionChanged) {
