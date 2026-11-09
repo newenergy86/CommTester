@@ -332,6 +332,14 @@ namespace ModbusSlave {
   }
 
 
+  // Reset only traffic counters. ERR and MISS are diagnostic history
+  // and intentionally remain unchanged.
+  void resetTrafficCounters() {
+    rxCount = 0;
+    txCount = 0;
+  }
+
+
   // ==========================================
   // UPDATE
   // ==========================================
