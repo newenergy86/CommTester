@@ -104,7 +104,7 @@ void ModbusRTU::begin(unsigned long baud,
   //
 
   unsigned long tCharUs =
-    (MODBUS_BITS_PER_CHAR * 1000000UL) / MODBUS_BAUD;
+    (bitsPerChar * 1000000UL) / baud;
 
   _t15 = (tCharUs * 15UL) / 10UL;
   _t35 = (tCharUs * 35UL) / 10UL;
