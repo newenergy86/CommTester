@@ -69,15 +69,16 @@ void loop() {
   uint8_t functionCode = 0;
   uint32_t rx = 0;
   uint32_t tx = 0;
+  uint32_t rateRequests = 0;
   uint32_t errors = 0;
   uint32_t missed = 0;
 
   ModbusSlave::getDisplayData(
-    slaveId, masterId, functionCode, rx, tx, errors, missed
+    slaveId, masterId, functionCode, rx, tx, rateRequests, errors, missed
   );
 
   Display::update(
-    slaveId, masterId, functionCode, rx, tx, errors, missed,
+    slaveId, masterId, functionCode, rx, tx, rateRequests, errors, missed,
     Settings::getBaudIndex()
   );
 
