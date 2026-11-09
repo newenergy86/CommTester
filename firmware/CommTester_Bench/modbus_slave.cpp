@@ -28,6 +28,7 @@ namespace ModbusSlave {
 
   uint32_t rxCount = 0;
   uint32_t txCount = 0;
+  uint32_t rateRequestCount = 0;
   uint32_t errorCount = 0;
   uint32_t missedCount = 0;
   uint8_t lastRequestId = 0xFF;
@@ -125,6 +126,7 @@ namespace ModbusSlave {
 
     rxCount = 0;
     txCount = 0;
+    rateRequestCount = 0;
     errorCount = 0;
     missedCount = 0;
     lastRequestId = 0xFF;
@@ -321,22 +323,25 @@ namespace ModbusSlave {
   void getDisplayData(uint8_t &slaveId, uint8_t &requestId,
                       uint8_t &functionCode,
                       uint32_t &rx, uint32_t &tx,
+                      uint32_t &rateRequests,
                       uint32_t &errors, uint32_t &missed) {
     slaveId = configuredSlaveId;
     requestId = lastRequestId;
     functionCode = lastFunctionCode;
     rx = rxCount;
     tx = txCount;
+    rateRequests = rateRequestCount;
     errors = errorCount;
     missed = missedCount;
   }
 
 
-  // Reset only traffic counters. ERR and MISS are diagnostic history
-  // and intentionally remain unchanged.
+  // Reset traffic and response-rate counters. ERR and MISS are diagnostic
+  // history and intentionally remain unchanged.
   void resetTrafficCounters() {
     rxCount = 0;
     txCount = 0;
+    rateRequestCount = 0;
   }
 
 
@@ -486,6 +491,14 @@ namespace ModbusSlave {
       return;
     }
 
+
+    // RATE denominator: CRC-valid frames addressed to this Slave.
+    // Count before PDU-length validation so malformed local requests are
+    // included as attempts that did not produce a response. Foreign IDs and
+    // broadcast ID 0 are excluded.
+    if (adu.getUnitId() == configuredSlaveId) {
+      rateRequestCount++;
+    }
 
     // Keep the latest valid frame visible, including requests for other IDs.
     // The displayed Master ID is the destination address carried in the request.
