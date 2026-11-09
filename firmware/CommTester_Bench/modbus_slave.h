@@ -5,7 +5,9 @@
 
 namespace ModbusSlave {
 
-  void begin();
+  void begin(uint8_t initialSlaveId, unsigned long baud);
+  void setSlaveId(uint8_t slaveId);
+  void setBaud(unsigned long baud);
   void update();
   void getDisplayData(uint8_t &slaveId, uint8_t &lastRequestId,
                       uint8_t &lastFunctionCode,
