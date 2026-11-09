@@ -3,21 +3,24 @@
 #include "modbus_slave.h"
 #include "display.h"
 #include "encoder.h"
+#include "settings.h"
 
 void setup() {
   Serial.begin(115200);
+  Settings::begin();
   Indicators::begin();
   Display::begin();
   Encoder::begin();
 
-  RS232Port::begin();
-  ModbusSlave::begin();
+  ModbusSlave::begin(Settings::getSlaveId(), Settings::getBaud());
 
   Serial.println();
   Serial.println(F("=============================="));
   Serial.println(F(" CommTester Slave"));
   Serial.println(F("=============================="));
-  Serial.println(F("RS-232 : 9600 8N1"));
+  Serial.print(F("RS-232 : "));
+  Serial.print(Settings::getBaud());
+  Serial.println(F(" 8N1"));
   Serial.println(F("Mode   : MODBUS SLAVE"));
   Serial.println(F("Encoder: D8/D9 + D7"));
   Serial.println();
@@ -27,7 +30,36 @@ void loop() {
   Indicators::update();
   Encoder::update();
 
-  uint8_t slaveId = 1;
+  int8_t rotation = 0;
+  const bool hasRotation = Encoder::takeRotation(rotation);
+  const bool buttonPressed = Encoder::takeButtonPress();
+
+  if (hasRotation || buttonPressed) {
+    uint8_t newSlaveId = Settings::getSlaveId();
+    uint8_t newBaudIndex = Settings::getBaudIndex();
+
+    const uint8_t changes = Display::handleEncoder(
+      hasRotation ? rotation : 0,
+      buttonPressed,
+      Settings::getSlaveId(),
+      Settings::getBaudIndex(),
+      newSlaveId,
+      newBaudIndex
+    );
+
+    if (changes != 0) {
+      Settings::save(newSlaveId, newBaudIndex);
+
+      if (changes & Display::CHANGE_SLAVE_ID) {
+        ModbusSlave::setSlaveId(newSlaveId);
+      }
+      if (changes & Display::CHANGE_BAUD) {
+        ModbusSlave::setBaud(Settings::getBaud());
+      }
+    }
+  }
+
+  uint8_t slaveId = Settings::getSlaveId();
   uint8_t masterId = 0xFF;
   uint8_t functionCode = 0;
   uint32_t rx = 0;
@@ -36,7 +68,8 @@ void loop() {
   uint32_t missed = 0;
 
   ModbusSlave::getDisplayData(
-    slaveId, masterId, functionCode, rx, tx, errors, missed
+    slaveId, masterId, functionCode, rx, tx, errors, missed,
+    Settings::getBaudIndex()
   );
 
   Display::update(
