@@ -46,7 +46,7 @@ void Encoder::begin() {
   buttonStableState = digitalRead(ENCODER_SW);
   buttonLastReading = buttonStableState;
   buttonLastChange = millis();
-  buttonPressStarted = 0;
+  buttonPressStarted = millis();
   longPressReported = false;
   clickPending = false;
 
