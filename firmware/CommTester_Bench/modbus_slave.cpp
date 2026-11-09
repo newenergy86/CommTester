@@ -19,7 +19,7 @@ namespace ModbusSlave {
   // SLAVE ADDRESS
   // ------------------------------------------
 
-  const byte SLAVE_ID = 1;
+  byte configuredSlaveId = 1;
 
 
   // ------------------------------------------
@@ -119,7 +119,9 @@ namespace ModbusSlave {
   // BEGIN
   // ==========================================
 
-  void begin() {
+  void begin(uint8_t initialSlaveId, unsigned long baud) {
+
+    configuredSlaveId = (initialSlaveId >= 1 && initialSlaveId <= 247) ? initialSlaveId : 1;
 
     rxCount = 0;
     txCount = 0;
@@ -233,6 +235,7 @@ namespace ModbusSlave {
     // GET RS-232
     // ----------------------------------------
 
+    RS232Port::begin(baud);
     SoftwareSerial &rs232 =
       RS232Port::getSerial();
 
@@ -290,9 +293,24 @@ namespace ModbusSlave {
     // ----------------------------------------
 
     modbusComm->begin(
-      MODBUS_BAUD,
+      baud,
       SERIAL_8N1
     );
+  }
+
+  void setSlaveId(uint8_t newSlaveId) {
+    if (newSlaveId >= 1 && newSlaveId <= 247) {
+      configuredSlaveId = newSlaveId;
+    }
+  }
+
+  void setBaud(unsigned long baud) {
+    if (modbusComm == nullptr || baud == 0) {
+      return;
+    }
+
+    RS232Port::begin(baud);
+    modbusComm->begin(baud, SERIAL_8N1);
   }
 
 
@@ -304,7 +322,7 @@ namespace ModbusSlave {
                       uint8_t &functionCode,
                       uint32_t &rx, uint32_t &tx,
                       uint32_t &errors, uint32_t &missed) {
-    slaveId = SLAVE_ID;
+    slaveId = configuredSlaveId;
     requestId = lastRequestId;
     functionCode = lastFunctionCode;
     rx = rxCount;
@@ -484,7 +502,7 @@ namespace ModbusSlave {
     // SLAVE ID
     // ----------------------------------------
 
-    if (adu.getUnitId() != SLAVE_ID) {
+    if (adu.getUnitId() != configuredSlaveId) {
 
       Serial.println(F("FOREIGN SLAVE ID"));
 
