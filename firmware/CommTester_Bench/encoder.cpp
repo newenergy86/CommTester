@@ -12,15 +12,30 @@ namespace {
   const byte ENCODER_SW = 7;
 
   const unsigned long BUTTON_DEBOUNCE_MS = 30;
+  const unsigned long LONG_PRESS_MS = 2000;
+  const unsigned long DOUBLE_CLICK_MS = 350;
 
   KY040 rotaryEncoder(ENCODER_CLK, ENCODER_DT);
 
   bool buttonStableState = HIGH;
   bool buttonLastReading = HIGH;
   unsigned long buttonLastChange = 0;
+  unsigned long buttonPressStarted = 0;
+  bool longPressReported = false;
+
+  bool clickPending = false;
+  unsigned long firstClickReleasedAt = 0;
 
   int8_t pendingRotation = 0;
-  bool pendingButtonPress = false;
+  Encoder::ButtonEvent pendingButtonEvent = Encoder::BUTTON_NONE;
+
+  void queueButtonEvent(Encoder::ButtonEvent event) {
+    // The main loop consumes events every iteration. Keep the first event
+    // if an unexpected backlog occurs rather than overwriting it.
+    if (pendingButtonEvent == Encoder::BUTTON_NONE) {
+      pendingButtonEvent = event;
+    }
+  }
 }
 
 void Encoder::begin() {
@@ -31,9 +46,12 @@ void Encoder::begin() {
   buttonStableState = digitalRead(ENCODER_SW);
   buttonLastReading = buttonStableState;
   buttonLastChange = millis();
+  buttonPressStarted = 0;
+  longPressReported = false;
+  clickPending = false;
 
   pendingRotation = 0;
-  pendingButtonPress = false;
+  pendingButtonEvent = BUTTON_NONE;
 
   Serial.println(F("Encoder input test ready"));
 }
@@ -53,8 +71,8 @@ void Encoder::update() {
     pendingRotation = -1;
   }
 
-  const bool reading = digitalRead(ENCODER_SW);
   const unsigned long now = millis();
+  const bool reading = digitalRead(ENCODER_SW);
 
   if (reading != buttonLastReading) {
     buttonLastReading = reading;
@@ -69,10 +87,41 @@ void Encoder::update() {
     if (buttonStableState == LOW) {
       Serial.println(F("ENC: BUTTON PRESSED"));
       Indicators::encoderPress();
-      pendingButtonPress = true;
+      buttonPressStarted = now;
+      longPressReported = false;
     } else {
       Serial.println(F("ENC: BUTTON RELEASED"));
+
+      if (!longPressReported) {
+        if (clickPending &&
+            (now - firstClickReleasedAt) <= DOUBLE_CLICK_MS) {
+          clickPending = false;
+          queueButtonEvent(BUTTON_DOUBLE);
+          Serial.println(F("ENC: DOUBLE CLICK"));
+        } else {
+          // A previous click whose window expired is delivered below.
+          // This release starts a new click candidate.
+          clickPending = true;
+          firstClickReleasedAt = now;
+        }
+      }
     }
+  }
+
+  // A long press is emitted once while the button remains held.
+  if (buttonStableState == LOW && !longPressReported &&
+      (now - buttonPressStarted) >= LONG_PRESS_MS) {
+    longPressReported = true;
+    clickPending = false;
+    queueButtonEvent(BUTTON_LONG);
+    Serial.println(F("ENC: LONG PRESS"));
+  }
+
+  // Defer a short-click event until the double-click window has elapsed.
+  if (clickPending && (now - firstClickReleasedAt) > DOUBLE_CLICK_MS) {
+    clickPending = false;
+    queueButtonEvent(BUTTON_SHORT);
+    Serial.println(F("ENC: SHORT CLICK"));
   }
 }
 
@@ -86,8 +135,12 @@ bool Encoder::takeRotation(int8_t &direction) {
   return true;
 }
 
-bool Encoder::takeButtonPress() {
-  const bool pressed = pendingButtonPress;
-  pendingButtonPress = false;
-  return pressed;
+bool Encoder::takeButtonEvent(ButtonEvent &event) {
+  if (pendingButtonEvent == BUTTON_NONE) {
+    return false;
+  }
+
+  event = pendingButtonEvent;
+  pendingButtonEvent = BUTTON_NONE;
+  return true;
 }
