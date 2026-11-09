@@ -1921,7 +1921,7 @@ The user explicitly confirmed the following control behavior:
 - Replaced the encoder's single button-press event with non-blocking SHORT / DOUBLE / LONG event classification.
 - Kept the project-owned 30 ms debounce and existing encoder sound feedback.
 - Long press is detected after 2000 ms without using delay().
-- Double-click recognition uses a 350 ms interval between stable button releases.
+- Double-click recognition uses a 350 ms window from the first stable release to the start of the second stable press; the second press may finish after that window.
 - Updated the OLED editor state machine to distinguish parameter browsing from value adjustment.
 - Rotation outside the editor no longer changes the selected setting or opens the editor.
 - Added `ModbusSlave::resetTrafficCounters()`, which clears RX and TX only. ERR and MISS are deliberately retained.
