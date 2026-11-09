@@ -8,6 +8,7 @@ namespace Settings {
   uint8_t getSlaveId();
   uint8_t getBaudIndex();
   unsigned long getBaud();
+  unsigned long getBaudForIndex(uint8_t index);
   void save(uint8_t slaveId, uint8_t baudIndex);
 }
 
