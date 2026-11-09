@@ -6,12 +6,10 @@
 namespace RS232Port {
   const byte RS232_RX = 10;
   const byte RS232_TX = 11;
-  const unsigned long RS232_BAUD = 9600;
-
   SoftwareSerial rs232(RS232_RX, RS232_TX);
 
-  void begin() {
-    rs232.begin(RS232_BAUD);
+  void begin(unsigned long baud) {
+    rs232.begin(baud);
   }
 
   SoftwareSerial& getSerial() {
