@@ -1817,3 +1817,80 @@ Define the minimal menu interaction model for the existing 128×64 U8X8 OLED and
 - Full requested post-encoder regression: **PASS**, user-reported.
 - Menu architecture and interaction specification: **NEXT**.
 - Menu implementation: **NOT STARTED**.
+
+
+## CHECKPOINT-51 — Inline main-screen settings editor implemented (hardware verification pending)
+
+### CHANGE
+
+The Nano Slave tester now has an encoder-driven settings editor integrated into the existing OLED status screen. No separate STATUS / SETTINGS / ABOUT menu was added.
+
+Editable parameters:
+- Slave ID: 1–247.
+- RS-232 / Modbus baud rate: 1200, 2400, 4800, 9600 or 19200.
+- Serial format remains fixed at 8N1.
+
+Encoder interaction:
+1. Rotate while not editing to select Slave ID or baud rate.
+2. Press the encoder button to enter editing.
+3. Rotate to change the staged value.
+4. Press again to commit.
+5. Committed values are stored in EEPROM and loaded at startup.
+
+The second OLED row displays SELECT / EDIT status. The remaining diagnostic rows are retained.
+
+### IMPLEMENTATION
+
+- Added project-owned `settings.cpp/.h` using the AVR EEPROM API, with magic, version and checksum validation.
+- Added encoder event retrieval while preserving the existing serial diagnostics and sound feedback.
+- Added the inline editor state to the display module.
+- Added runtime Slave ID update to the Slave module.
+- Added runtime SoftwareSerial baud reconfiguration.
+- Corrected Modbus RTU t1.5/t3.5 calculation to use the active baud and UART character format passed to `ModbusRTU::begin()`, rather than the old compile-time 9600/8N1 constants.
+- External libraries were not modified.
+
+### DECISIONS
+
+- Keep the compact Nano firmware Slave-only.
+- Keep all controls on the existing main screen.
+- Keep 8N1 fixed for this revision.
+- Limit selectable baud rates to 1200–19200 pending physical verification of SoftwareSerial at each supported rate.
+- Save only confirmed changes to EEPROM.
+
+### SOURCE STATUS
+
+The changed and added source files were committed to GitHub. Post-write fetches confirmed the current source for the main sketch, display, encoder, settings, RS-232 port, Modbus RTU and Modbus Slave modules.
+
+### TEST
+
+- GitHub writes: PASS.
+- Source read-back: PASS for the files inspected after updates.
+- Arduino Nano compilation: NOT RUN in this checkpoint.
+- Flash/SRAM measurement: PENDING.
+- Encoder selection/edit/commit interaction: PENDING.
+- Slave ID change verified with a Modbus master: PENDING.
+- Baud switching at all five rates: PENDING.
+- EEPROM persistence after power cycle: PENDING.
+- Full FC01/02/03/04/05/06/15/16, OLED sleep/wake and indicator regression: PENDING.
+
+### ACCEPTANCE CRITERIA
+
+1. Compile for Arduino Nano / ATmega328P with the existing libraries; no external library modifications.
+2. Verify selection of both settings and correct clockwise/counter-clockwise editing.
+3. Set Slave ID to a non-default value; confirm the tester responds only at the new ID and retains the value after power cycle.
+4. Test each listed baud rate with a matching Modbus master; verify correct request/response framing and CRC.
+5. Change baud rate and Slave ID repeatedly; verify no lockup and no stale display values.
+6. Verify the original Modbus function regression, OLED sleep/wake, RX/TX/ERROR/HEARTBEAT indications and encoder sound feedback.
+7. Record final Flash/SRAM usage and compare with CHECKPOINT-49A (20,532 bytes Flash / 1,506 bytes global SRAM / 542 bytes compiler-reported remaining).
+
+### NEXT STEP
+
+Compile and upload this revision, then perform the acceptance tests above. Do not add further features until this checkpoint is accepted.
+
+### STATUS
+
+- Inline settings editor source: IMPLEMENTED.
+- EEPROM persistence source: IMPLEMENTED.
+- Runtime Slave ID and baud source: IMPLEMENTED.
+- Build and hardware acceptance: PENDING.
+- Simplified Nano tester completion: PENDING acceptance.
