@@ -5,7 +5,7 @@
 #include <SoftwareSerial.h>
 
 namespace RS232Port {
-  void begin();
+  void begin(unsigned long baud);
   SoftwareSerial& getSerial();
 }
 
