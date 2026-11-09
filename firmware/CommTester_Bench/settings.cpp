@@ -51,6 +51,13 @@ unsigned long Settings::getBaud() {
   return BAUD_RATES[baudIndex];
 }
 
+unsigned long Settings::getBaudForIndex(uint8_t index) {
+  if (index >= (sizeof(BAUD_RATES) / sizeof(BAUD_RATES[0]))) {
+    return BAUD_RATES[DEFAULT_BAUD_INDEX];
+  }
+  return BAUD_RATES[index];
+}
+
 void Settings::save(uint8_t newSlaveId, uint8_t newBaudIndex) {
   if (newSlaveId < 1 || newSlaveId > 247 ||
       newBaudIndex >= (sizeof(BAUD_RATES) / sizeof(BAUD_RATES[0]))) {
