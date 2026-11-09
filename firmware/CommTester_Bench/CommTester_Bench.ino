@@ -31,23 +31,24 @@ void loop() {
   Encoder::update();
 
   int8_t rotation = 0;
+  Encoder::ButtonEvent buttonEvent = Encoder::BUTTON_NONE;
   const bool hasRotation = Encoder::takeRotation(rotation);
-  const bool buttonPressed = Encoder::takeButtonPress();
+  const bool hasButtonEvent = Encoder::takeButtonEvent(buttonEvent);
 
-  if (hasRotation || buttonPressed) {
+  if (hasRotation || hasButtonEvent) {
     uint8_t newSlaveId = Settings::getSlaveId();
     uint8_t newBaudIndex = Settings::getBaudIndex();
 
     const uint8_t changes = Display::handleEncoder(
       hasRotation ? rotation : 0,
-      buttonPressed,
+      hasButtonEvent ? buttonEvent : Encoder::BUTTON_NONE,
       Settings::getSlaveId(),
       Settings::getBaudIndex(),
       newSlaveId,
       newBaudIndex
     );
 
-    if (changes != 0) {
+    if (changes & (Display::CHANGE_SLAVE_ID | Display::CHANGE_BAUD)) {
       Settings::save(newSlaveId, newBaudIndex);
 
       if (changes & Display::CHANGE_SLAVE_ID) {
@@ -56,6 +57,10 @@ void loop() {
       if (changes & Display::CHANGE_BAUD) {
         ModbusSlave::setBaud(Settings::getBaud());
       }
+    }
+
+    if (changes & Display::RESET_TRAFFIC) {
+      ModbusSlave::resetTrafficCounters();
     }
   }
 
