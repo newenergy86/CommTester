@@ -1894,3 +1894,81 @@ Compile and upload this revision, then perform the acceptance tests above. Do no
 - Runtime Slave ID and baud source: IMPLEMENTED.
 - Build and hardware acceptance: PENDING.
 - Simplified Nano tester completion: PENDING acceptance.
+
+
+## CHECKPOINT-52 — Encoder gesture model and RX/TX reset implemented (verification pending)
+
+### USER-CONFIRMED INTERACTION MODEL
+
+The user explicitly confirmed the following control behavior:
+
+**Outside the editor**
+- Rotation: no UI action; existing screen wake and encoder sound feedback remain.
+- Short press: no UI action; existing screen wake and press sound feedback remain.
+- Long press (>2 seconds): enter the settings editor.
+- Double press: reset RX and TX counters. RATE is recalculated from the reset counters.
+
+**Inside the editor**
+- Rotation while browsing: select the parameter.
+- Short press while browsing: enter value adjustment for the selected parameter.
+- Rotation while adjusting: change the staged value.
+- Next short press: confirm the selected value and save it to EEPROM.
+- Long press (>2 seconds): exit the editor. An unconfirmed staged value is discarded; already confirmed values remain saved.
+- Double press: no action.
+
+### CHANGE
+
+- Replaced the encoder's single button-press event with non-blocking SHORT / DOUBLE / LONG event classification.
+- Kept the project-owned 30 ms debounce and existing encoder sound feedback.
+- Long press is detected after 2000 ms without using delay().
+- Double-click recognition uses a 350 ms interval between stable button releases.
+- Updated the OLED editor state machine to distinguish parameter browsing from value adjustment.
+- Rotation outside the editor no longer changes the selected setting or opens the editor.
+- Added `ModbusSlave::resetTrafficCounters()`, which clears RX and TX only. ERR and MISS are deliberately retained.
+- Connected double-click reset to the main loop. RATE is not stored separately; it is derived from RX/TX and therefore returns to its no-sample display after reset.
+- No external library was modified. Modbus protocol processing and RS-232 transport were not changed.
+
+### SOURCE REVIEW / GITHUB
+
+- Fresh current GitHub source was fetched before the changes.
+- Encoder, display, main sketch and Modbus Slave files were updated.
+- Every changed source file was fetched back and compared with the submitted content: **PASS**.
+- Project documentation was updated and fetched back: **PASS**.
+- Search for the removed `takeButtonPress` API returned no indexed code matches; repository code-search indexing reported incomplete results, so this is not treated as a complete repository-wide proof.
+
+### TEST
+
+- GitHub writes and exact read-back verification: **PASS**.
+- Arduino Nano / ATmega328P compilation: **NOT RUN**.
+- Flash/SRAM measurement: **PENDING**.
+- Long press entry and exit: **PENDING**.
+- Outside-editor rotation/short-press no-op behavior, wake and sound: **PENDING**.
+- Parameter browsing and value adjustment/confirmation: **PENDING**.
+- Double-click reset of RX/TX and automatic RATE update: **PENDING**.
+- ERR/MISS retention after reset: **PENDING**.
+- EEPROM persistence after power cycle: **PENDING**.
+- Full Modbus FC01/02/03/04/05/06/15/16, OLED sleep/wake and indicator regression: **PENDING**.
+
+### ACCEPTANCE TEST
+
+1. Compile for Arduino Nano / ATmega328P with the existing library set; record Flash/SRAM.
+2. Outside the editor, rotate and short-press: confirm no editor or parameter-selection change; confirm wake and sound feedback remain.
+3. Hold the button for more than 2 seconds: confirm editor entry. Repeat to confirm exit.
+4. Inside the editor, rotate between Slave ID and baud rate. Short-press to enter value adjustment; rotate to change; short-press again to confirm.
+5. Exit and re-enter the editor; confirm the selected value is retained. Power-cycle and confirm EEPROM persistence.
+6. Generate nonzero RX/TX/ERR/MISS values, double-click outside the editor, and confirm RX=0, TX=0, RATE shows no sample, while ERR and MISS remain unchanged.
+7. Double-click inside the editor; confirm it does not reset counters or trigger a value action.
+8. Run the complete Modbus FC01/02/03/04/05/06/15/16 regression and confirm OLED, encoder sound, RX/TX/ERROR and HEARTBEAT behavior.
+
+### DECISION
+
+- Accept the user-confirmed gesture model as the required UI behavior.
+- Keep RX/TX reset separate from ERR/MISS diagnostic history.
+- Do not add further UI features until this checkpoint passes compile and hardware acceptance.
+
+### STATUS
+
+- Gesture classifier and editor state machine: **IMPLEMENTED**.
+- RX/TX reset integration: **IMPLEMENTED**.
+- GitHub source and documentation read-back: **PASS**.
+- Compile, memory measurement and hardware acceptance: **PENDING**.
