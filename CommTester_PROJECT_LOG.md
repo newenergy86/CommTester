@@ -2307,3 +2307,36 @@ The test summary reported OVERALL RESULT: PASS.
 - Valid request recovery after invalid CRC: **PASS**.
 - Register data unchanged before/after invalid CRC: **PASS**.
 
+
+
+## CHECKPOINT-61 — Extended hardware stability test PASS
+
+### USER-REPORTED TEST RESULT
+
+The user reports that the extended runtime / long-duration test of the current Nano firmware baseline completed successfully.
+
+### FACT
+
+- The extended test completed without a reported failure: **PASS (user-reported)**.
+- Together with CHECKPOINT-59, the current no-debug-Serial baseline has now passed both the initial stability observation and the subsequent long-duration test.
+- Together with CHECKPOINT-60, invalid-CRC rejection and recovery after the invalid frame have also passed.
+
+### SCOPE / LIMITATIONS
+
+- Exact test duration, detailed sequence of exercised UI actions, and traffic volume were not provided; they are therefore not specified here.
+- This result confirms the reported long-duration test only. It does not replace a complete post-baseline regression of every supported Modbus function code.
+- The original cause of the earlier freezes/restarts remains **NOT CONFIRMED**.
+
+### DECISION
+
+- Keep the current no-debug-Serial firmware as the stable Nano baseline.
+- Do not modify firmware or external libraries on the strength of this successful test.
+- Treat extended runtime stability as closed for the tested conditions; continue with the remaining Nano acceptance-test items.
+
+### STATUS
+
+- Initial stability observation after Serial diagnostics removal (CHECKPOINT-59): **PASS**.
+- Invalid CRC rejection and subsequent valid-frame recovery (CHECKPOINT-60): **PASS**.
+- Extended runtime / long-duration test: **PASS (user-reported)**.
+- Complete post-baseline Modbus function-code regression: **PENDING**, unless separately confirmed by test records.
+- Root cause of the earlier instability: **NOT CONFIRMED**.
