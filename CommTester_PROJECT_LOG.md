@@ -2568,3 +2568,44 @@ This checkpoint covers the four specified gestures outside the editor and Modbus
 - Long-press editor entry: **PASS**.
 - Long-press editor exit: **PASS**.
 - Modbus responsiveness during gesture test: **PASS**.
+
+
+## CHECKPOINT-68 — Encoder editor interaction PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user completed the editor interaction checks:
+
+1. Long press opened the editor at `EDIT: SLAVE ID`: **PASS**.
+2. Encoder rotation switched selection between `SLAVE ID` and `BAUD RATE`: **PASS**.
+3. Short press entered the selected value-adjustment state (`VAL`): **PASS**.
+4. Rotation changed the staged value; reverse rotation restored the original value: **PASS**.
+5. Short press confirmed the restored value and exited value-adjustment state: **PASS**.
+6. The same adjustment/restore/confirm sequence worked for `BAUD RATE`: **PASS**.
+7. Double-click inside the editor had no action and did not reset traffic counters or alter settings: **PASS**.
+8. Long press exited the editor: **PASS**.
+
+The user confirmed that the saved Slave ID and baud rate remained unchanged and Modbus communication continued during the test: **PASS**.
+
+### RESULT
+
+The reported editor browsing, value adjustment, confirmation, no-op double-click and exit behavior passed. No firmware changes were required.
+
+### SCOPE / LIMITATIONS
+
+This test deliberately restored each staged value before confirmation. It verifies the editor interaction path without changing the saved settings. It does not independently verify display behavior during a prolonged editing session or every wrap-around boundary.
+
+### DECISION
+
+- Accept the encoder editor interaction for the tested conditions.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- Editor entry / parameter selection: **PASS**.
+- Slave ID value adjustment and confirmation: **PASS**.
+- Baud-rate value adjustment and confirmation: **PASS**.
+- Double-click inside editor: **PASS (no action)**.
+- Editor exit: **PASS**.
+- Saved settings unchanged: **PASS**.
+- Modbus responsiveness during test: **PASS**.
