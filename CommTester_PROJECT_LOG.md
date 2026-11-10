@@ -2067,16 +2067,26 @@ The user's boot trace ends at `BOOT 5`, after `Encoder::begin()` and immediately
 ### TEST
 
 - GitHub source inspection before instrumentation: PASS.
-- Diagnostic source update and read-back: PENDING.
-- Arduino Nano / ATmega328P compile: PENDING.
-- Hardware boot trace with the new markers: PENDING.
+- Diagnostic source update and read-back: PASS.
+- Hardware boot trace with the new markers: PASS, user-reported.
+- Serial trace reached `RTU: ready`, `MS: RTU ready` and `BOOT 6`.
+- User confirmed encoder response, audible feedback and activity indication after startup: PASS, user-reported.
+- Arduino Nano / ATmega328P compile result and Flash/SRAM measurement: NOT REPORTED.
+- Modbus function regression and remaining UI/indicator checks: PENDING.
+
+### RESULT / INTERPRETATION
+
+The tested boot completed through `setup()`. The startup path through RS-232 initialization, ModbusRTU object construction and the RX quiet-time drain loop returned successfully in this run.
+
+This does not prove that the unbounded drain loop caused the earlier lockup; the earlier failure was not reproduced during this test. No functional fix has been applied.
 
 ### NEXT STEP
 
-Flash the diagnostic revision and report the complete serial output from reset. The last marker will distinguish RS-232 initialization, object construction, RTU setup and the RX quiet-time drain loop.
+Run the post-change acceptance checks for settings/editor behavior, EEPROM persistence, Modbus FC01/02/03/04/05/06/15/16, traffic counters/RATE, OLED, encoder gestures/sounds and RX/TX/ERROR/HEARTBEAT indications. Record any failure before changing code.
 
 ### STATUS
 
-- Root cause: NOT CONFIRMED.
-- Diagnostic instrumentation: ADDED; hardware verification PENDING.
-- No functional fix has been applied.
+- Startup diagnostic run: PASS.
+- Root cause of the intermittent/non-reproduced startup issue: NOT CONFIRMED.
+- Functional regression after CHECKPOINT-53: PENDING.
+- Diagnostic markers: TEMPORARY; remove only after startup stability and regression are accepted.
