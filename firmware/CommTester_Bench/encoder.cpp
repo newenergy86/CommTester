@@ -54,20 +54,16 @@ void Encoder::begin() {
 
   pendingRotation = 0;
   pendingButtonEvent = BUTTON_NONE;
-
-  Serial.println(F("Encoder input test ready"));
 }
 
 void Encoder::update() {
   const byte rotation = rotaryEncoder.getRotation();
 
   if (rotation == KY040::CLOCKWISE) {
-    Serial.println(F("ENC: CW"));
     Indicators::encoderStep();
     Display::activity();
     pendingRotation = 1;
   } else if (rotation == KY040::COUNTERCLOCKWISE) {
-    Serial.println(F("ENC: CCW"));
     Indicators::encoderStep();
     Display::activity();
     pendingRotation = -1;
@@ -87,21 +83,18 @@ void Encoder::update() {
     Display::activity();
 
     if (buttonStableState == LOW) {
-      Serial.println(F("ENC: BUTTON PRESSED"));
       Indicators::encoderPress();
       buttonPressStarted = now;
       longPressReported = false;
       secondClickInProgress =
         clickPending && (now - firstClickReleasedAt) <= DOUBLE_CLICK_MS;
     } else {
-      Serial.println(F("ENC: BUTTON RELEASED"));
 
       if (!longPressReported) {
         if (secondClickInProgress) {
           clickPending = false;
           secondClickInProgress = false;
           queueButtonEvent(BUTTON_DOUBLE);
-          Serial.println(F("ENC: DOUBLE CLICK"));
         } else {
           // This release starts a new click candidate. A second press
           // beginning inside the interval completes a double click.
@@ -121,7 +114,6 @@ void Encoder::update() {
     clickPending = false;
     secondClickInProgress = false;
     queueButtonEvent(BUTTON_LONG);
-    Serial.println(F("ENC: LONG PRESS"));
   }
 
   // Defer a short-click event until the double-click window has elapsed.
@@ -129,7 +121,6 @@ void Encoder::update() {
       (now - firstClickReleasedAt) > DOUBLE_CLICK_MS) {
     clickPending = false;
     queueButtonEvent(BUTTON_SHORT);
-    Serial.println(F("ENC: SHORT CLICK"));
   }
 }
 
