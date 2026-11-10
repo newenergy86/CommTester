@@ -2128,3 +2128,34 @@ Compile and upload this diagnostic revision. Reproduce the display freeze once, 
 - Diagnostic instrumentation: IMPLEMENTED.
 - Root cause: NOT CONFIRMED.
 - Functional fix: NOT APPLIED.
+
+
+## CHECKPOINT-56 — Restore pre-instrumentation OLED baseline
+
+### CHANGE
+- Restored `firmware/CommTester_Bench/display.cpp` exactly to its state immediately before CHECKPOINT-55 (parent commit `91cca9cb5fe1066360b6f566578558f4d2aaf78b`).
+- Removed all temporary OLED Serial markers introduced by CHECKPOINT-55.
+- No display logic, encoder logic, Modbus logic or external library was changed.
+
+### WHY
+The user reported that the CHECKPOINT-55 diagnostic build introduced a new startup failure (partial OLED bars followed by a black screen, no startup melody or encoder response), while the pre-CHECKPOINT-55 version starts normally but later freezes after encoder interaction. The diagnostic build is therefore not a valid baseline for reproducing the original fault.
+
+### SOURCE VERIFICATION
+- Pre-change current file fetched from `main`: PASS.
+- Baseline source fetched from parent commit: PASS.
+- Restore committed: 259c0f84f4f98115306b484eb364cb1c7461cdbf.
+- Immediate exact read-back comparison against the pre-CHECKPOINT-55 source: PASS.
+- Restored blob SHA: 3853f31b4f51e5d07b8518e317a0bdd7b60bbf74.
+
+### TEST
+- Hardware compile/upload after restore: NOT YET REPORTED.
+- Startup melody and encoder initialization: PENDING user confirmation.
+- Reproduction of the original delayed OLED freeze: PENDING.
+
+### NEXT STEP
+Add only targeted markers around the encoder-triggered UI redraw and OLED wake path, without instrumenting initial screen clear or every row write. Reproduce the original freeze and capture the last marker.
+
+### STATUS
+- Pre-CHECKPOINT-55 OLED source baseline restored in GitHub: PASS.
+- Root cause of the original encoder-related freeze: NOT CONFIRMED.
+- Functional fix: NOT APPLIED.
