@@ -236,10 +236,7 @@ namespace ModbusSlave {
     // ----------------------------------------
     // GET RS-232
     // ----------------------------------------
-
-    Serial.println(F("MS: RS232 begin"));
     RS232Port::begin(baud);
-    Serial.println(F("MS: RS232 ready"));
     SoftwareSerial &rs232 =
       RS232Port::getSerial();
 
@@ -247,11 +244,8 @@ namespace ModbusSlave {
     // ----------------------------------------
     // MODBUS COMMUNICATION
     // ----------------------------------------
-
-    Serial.println(F("MS: create ModbusRTU"));
     modbusComm =
       new ModbusRTU(rs232);
-    Serial.println(F("MS: ModbusRTU created"));
 
 
     // ----------------------------------------
@@ -297,13 +291,10 @@ namespace ModbusSlave {
     // ----------------------------------------
     // START MODBUS
     // ----------------------------------------
-
-    Serial.println(F("MS: RTU begin"));
     modbusComm->begin(
       baud,
       SERIAL_8N1
     );
-    Serial.println(F("MS: RTU ready"));
   }
 
   void setSlaveId(uint8_t newSlaveId) {
@@ -389,93 +380,10 @@ namespace ModbusSlave {
 
 
     // ----------------------------------------
-    // FRAME RECEIVED
-    // ----------------------------------------
-
-    Serial.println();
-    Serial.println(F("FRAME RECEIVED"));
-
-
-    Serial.print(F("Length: "));
-    Serial.println(adu.getRtuLen());
-
-
-    Serial.print(F("ID: "));
-    if (adu.getRtuLen() >= 1) {
-      Serial.println(adu.getUnitId());
-    }
-    else {
-      Serial.println(F("N/A"));
-    }
-
-
-    Serial.print(F("Function: "));
-    if (adu.getRtuLen() >= 2) {
-      Serial.println(adu.getFunctionCode());
-    }
-    else {
-      Serial.println(F("N/A"));
-    }
-
-
-    Serial.print(F("CRC: "));
-
-    if (error == MODBUS_RTU_FRAME_ERROR) {
-      Serial.println(F("N/A"));
-    }
-    else if (adu.crcGood()) {
-      Serial.println(F("OK"));
-    }
-    else {
-      Serial.println(F("BAD"));
-    }
-
-
-    // ----------------------------------------
-    // RAW FRAME
-    // ----------------------------------------
-
-    if (adu.getRtuLen() > 0) {
-
-      Serial.print(F("RAW: "));
-
-      for (uint16_t i = 0;
-           i < adu.getRtuLen();
-           i++) {
-
-        if (adu.rtu[i] < 0x10) {
-          Serial.print(F("0"));
-        }
-
-        Serial.print(
-          adu.rtu[i],
-          HEX
-        );
-
-        Serial.print(F(" "));
-      }
-
-      Serial.println();
-    }
-
-
-    // ----------------------------------------
     // COMMUNICATION ERROR
     // ----------------------------------------
 
     if (error != MODBUS_RTU_SUCCESS) {
-
-      Serial.print(F("ERROR CODE: "));
-      Serial.println(error);
-
-      Serial.print(F("CRC CHECK: "));
-      if (error == MODBUS_RTU_CRC_ERROR) {
-        Serial.println(F("BAD"));
-      }
-      else {
-        Serial.println(F("N/A"));
-      }
-
       errorCount++;
       Indicators::error();
 
@@ -488,8 +396,6 @@ namespace ModbusSlave {
     // ----------------------------------------
 
     if (!adu.crcGood()) {
-
-      Serial.println(F("CRC ERROR"));
 
       errorCount++;
       Indicators::error();
@@ -518,7 +424,6 @@ namespace ModbusSlave {
     // Slave should answer it. Malformed foreign-address frames are ERR,
     // not MISS.
     if (!hasValidRequestLength(adu)) {
-      Serial.println(F("INVALID PDU LENGTH"));
       errorCount++;
       Indicators::error();
       return;
@@ -530,8 +435,6 @@ namespace ModbusSlave {
     // ----------------------------------------
 
     if (adu.getUnitId() != configuredSlaveId) {
-
-      Serial.println(F("FOREIGN SLAVE ID"));
 
       // Valid request intentionally ignored by this Slave.
       missedCount++;
@@ -550,80 +453,20 @@ namespace ModbusSlave {
     // SHOW RESPONSE
     // ----------------------------------------
 
-    Serial.println();
-
     adu.updateCrc();
-
-    Serial.println(F("RESPONSE PREPARED"));
-
-
-    Serial.print(F("Length: "));
-    Serial.println(adu.getRtuLen());
-
-
-    Serial.print(F("ID: "));
-    Serial.println(adu.getUnitId());
-
-
-    Serial.print(F("Function: "));
-    Serial.println(adu.getFunctionCode());
-
-
-    Serial.print(F("CRC: "));
-
-    if (adu.crcGood()) {
-      Serial.println(F("OK"));
-    }
-    else {
-      Serial.println(F("BAD"));
-    }
-
-
-    // ----------------------------------------
-    // RAW RESPONSE
-    // ----------------------------------------
-
-    if (adu.getRtuLen() > 0) {
-
-      Serial.print(F("RAW: "));
-
-      for (uint16_t i = 0;
-           i < adu.getRtuLen();
-           i++) {
-
-        if (adu.rtu[i] < 0x10) {
-          Serial.print(F("0"));
-        }
-
-        Serial.print(
-          adu.rtu[i],
-          HEX
-        );
-
-        Serial.print(F(" "));
-      }
-
-      Serial.println();
-    }
 
 
     // ----------------------------------------
     // TRANSMIT RESPONSE
     // ----------------------------------------
 
-    Serial.println(F("TRANSMITTING"));
-
     if (modbusComm->writeAdu(adu)) {
 
       txCount++;
 
-      Serial.println(F("RESPONSE SENT"));
-
       Indicators::tx();
     }
     else {
-
-      Serial.println(F("RESPONSE FAILED"));
 
       Indicators::error();
     }
