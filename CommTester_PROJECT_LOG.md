@@ -2645,3 +2645,36 @@ This checkpoint covers RX/TX indication during the tested QModMaster exchange. E
 - Repeated Modbus traffic and continued responsiveness: **PASS**.
 - ERROR LED / sound: **PENDING**.
 - HEARTBEAT LED: **PENDING**.
+
+
+## CHECKPOINT-70 — ERROR LED and invalid-CRC recovery indication PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user ran the invalid-CRC test sequence and confirmed all four expected behaviors:
+
+1. ERROR LED (D4) activates on the deliberately corrupted Modbus RTU request: **PASS**.
+2. The audible error indication is produced: **PASS**.
+3. The Slave does not respond to the invalid-CRC request: **PASS**.
+4. A subsequent valid Modbus request receives a response: **PASS**.
+
+### RESULT
+
+ERROR visual/audible indication, invalid-CRC rejection and recovery on the next valid request passed the reported hardware test. No firmware changes were required.
+
+### SCOPE / LIMITATIONS
+
+This checkpoint covers the tested invalid-CRC sequence. It does not establish behavior for every malformed frame or all RTU framing/timing errors.
+
+### DECISION
+
+- Accept ERROR LED/sound indication and recovery for the tested invalid-CRC sequence.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- ERROR LED: **PASS**.
+- Audible error indication: **PASS**.
+- Invalid-CRC request rejected without response: **PASS**.
+- Subsequent valid request answered: **PASS**.
+- HEARTBEAT LED: **PENDING**.
