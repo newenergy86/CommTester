@@ -29,6 +29,8 @@ ModbusRTU::ModbusRTU(Stream& serial,
 void ModbusRTU::begin(unsigned long baud,
                        uint32_t config)
 {
+  Serial.println(F("RTU: begin"));
+
   // ----------------------------------------------------------
   // Определяем количество бит на один UART-символ.
   //
@@ -149,6 +151,7 @@ void ModbusRTU::begin(unsigned long baud,
   // Перед началом работы нам нужен именно новый кадр.
   // ----------------------------------------------------------
 
+  Serial.println(F("RTU: drain start"));
   unsigned long startMicros = micros();
 
   do {
@@ -160,6 +163,8 @@ void ModbusRTU::begin(unsigned long baud,
     }
 
   } while (micros() - startMicros < _t35);
+
+  Serial.println(F("RTU: ready"));
 }
 
 
