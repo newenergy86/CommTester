@@ -2199,3 +2199,47 @@ Compile and upload this revision. Confirm normal startup first. Then reproduce t
 - Targeted diagnostics committed and read-back verified: PASS.
 - Compilation and hardware reproduction: PENDING.
 - Root cause and functional fix: NOT CONFIRMED / NOT APPLIED.
+
+
+## CHECKPOINT-58 — Remove firmware Serial diagnostics for stability A/B test
+
+### USER-REQUESTED CHANGE
+Remove Serial output to determine whether diagnostic UART traffic contributes to the unstable startup and OLED freeze.
+
+### CHANGE
+Removed all firmware `Serial.print()`, `Serial.println()` and `Serial.begin()` calls from the current `firmware/CommTester_Bench` source:
+- `CommTester_Bench.ino`: removed UART initialization and startup banner.
+- `display.cpp`: removed the temporary `ENC_WAKE_*` and `ENC_UI_*` markers.
+- `encoder.cpp`: removed encoder event/debug messages.
+- `modbus_rtu.cpp`: removed RTU startup markers.
+- `modbus_slave.cpp`: removed Slave startup, frame dump, CRC/error, response and transmission diagnostics.
+- No Modbus state handling, OLED calls, encoder logic, timing, pin assignment, EEPROM behavior or protocol logic was intentionally changed.
+- No external library was modified.
+- The repository firmware directory contains no Serial API calls after this change (18 source/header/sketch files scanned).
+
+### WHY
+The user reports repeated boot sequences, slow/unstable startup, OLED flicker and a near-immediate display freeze. The user suspects resource pressure. Removing diagnostic UART traffic is a controlled test of whether Serial output/timing contributes to the symptoms. It does not by itself prove or disprove SRAM exhaustion.
+
+### SOURCE VERIFICATION
+- All five changed files were fetched from current `main` before editing.
+- Every file update was committed sequentially and immediately fetched back; exact content comparison: PASS.
+- Current source scan across all 18 firmware source/header/sketch files: no `Serial.` references found.
+- External libraries unchanged.
+
+### TEST
+- Arduino Nano / ATmega328P compilation: PENDING user run.
+- Flash/SRAM report: PENDING.
+- Hardware startup stability and OLED freeze test: PENDING.
+- Modbus request/response regression after diagnostics removal: PENDING.
+
+### IMPORTANT TEST CONTROL
+The user's local `BOOT 1...` markers were added locally and are not present in the repository sketch. For this A/B test, synchronize the complete updated sketch and all five changed files from `main`; do not retain local `Serial.println("BOOT ...")` instrumentation. The current repository sketch no longer initializes the USB Serial interface because the current firmware tree has no Serial console consumer.
+
+### NEXT STEP
+Compile and flash the synchronized repository version. Observe startup melody, OLED stability, encoder response and Modbus operation without Serial diagnostics. If instability remains, collect the compiler's Flash/SRAM usage and investigate reset cause/power integrity as separate hypotheses.
+
+### STATUS
+- Serial diagnostics removed from repository firmware: PASS.
+- Source read-back verification: PASS.
+- Build, memory measurement and hardware A/B test: PENDING.
+- Root cause: NOT CONFIRMED.
