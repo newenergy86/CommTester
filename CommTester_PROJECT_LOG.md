@@ -2269,3 +2269,41 @@ Continue normal use and observe startup, OLED refresh, encoder gestures, Modbus 
 - CHECKPOINT-58 source and read-back verification: **PASS**.
 - Initial user-reported hardware stability after CHECKPOINT-58: **PASS**.
 - Extended soak test / full regression: **PENDING**.
+
+
+## CHECKPOINT-60 — Invalid CRC rejection and valid-frame recovery PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user ran `modbus_test_crc.py` against the Nano Slave on COM7 with 9600 baud, 8N1, Slave ID 1.
+
+Test sequence and observed results:
+
+1. A valid FC03 request for three holding registers was sent before the invalid frame. The Slave returned a valid response containing register values [100, 200, 300]: **PASS**.
+2. The same request with one CRC byte deliberately changed (good frame ending `05 CB`, bad frame ending `05 CC`) was sent. No response was received: **PASS**.
+3. The original valid FC03 request was sent again after the CRC error. The Slave returned the same valid register values [100, 200, 300]: **PASS**.
+
+The test summary reported OVERALL RESULT: PASS.
+
+### FACT
+
+- The tested Slave rejected the deliberately corrupted CRC frame without transmitting a response.
+- A subsequent valid FC03 request was accepted and answered correctly.
+- The three tested holding-register values were unchanged across the invalid-CRC event.
+- This confirms functional recovery for the tested sequence; it does not establish recovery for every possible framing, timing or buffer-overrun condition.
+
+### TEST SCOPE
+
+- Interface: COM7, 9600 baud, 8N1.
+- Slave ID: 1.
+- Function code: FC03.
+- Invalidity introduced: CRC low byte changed from `CB` to `CC`.
+- Other Modbus function codes and extended soak behavior were not part of this test.
+
+### STATUS
+
+- Valid request before invalid CRC: **PASS**.
+- Invalid CRC rejection (no response): **PASS**.
+- Valid request recovery after invalid CRC: **PASS**.
+- Register data unchanged before/after invalid CRC: **PASS**.
+
