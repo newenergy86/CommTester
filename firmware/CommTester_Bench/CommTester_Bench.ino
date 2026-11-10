@@ -6,7 +6,6 @@
 #include "settings.h"
 
 void setup() {
-  Serial.begin(115200);
   Settings::begin();
   Indicators::begin();
   Display::begin();
@@ -14,16 +13,7 @@ void setup() {
 
   ModbusSlave::begin(Settings::getSlaveId(), Settings::getBaud());
 
-  Serial.println();
-  Serial.println(F("=============================="));
-  Serial.println(F(" CommTester Slave"));
-  Serial.println(F("=============================="));
-  Serial.print(F("RS-232 : "));
-  Serial.print(Settings::getBaud());
-  Serial.println(F(" 8N1"));
-  Serial.println(F("Mode   : MODBUS SLAVE"));
-  Serial.println(F("Encoder: D8/D9 + D7"));
-  Serial.println();
+
 }
 
 void loop() {
