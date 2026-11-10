@@ -2340,3 +2340,60 @@ The user reports that the extended runtime / long-duration test of the current N
 - Extended runtime / long-duration test: **PASS (user-reported)**.
 - Complete post-baseline Modbus function-code regression: **PENDING**, unless separately confirmed by test records.
 - Root cause of the earlier instability: **NOT CONFIRMED**.
+
+
+## CHECKPOINT-62 — Complete Modbus RTU function regression PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user ran `modbus_test_all.py` against the current Nano Slave baseline.
+
+Test configuration:
+- Interface: COM7.
+- Baud rate: 9600.
+- Serial format: 8N1.
+- Slave ID: 1.
+- Overall result reported by the test script: **PASS**.
+
+### VERIFIED TEST CASES
+
+| Function | Test | Result |
+|---|---|---|
+| FC01 | Read 16 coils, address 0 | **PASS** |
+| FC02 | Read 16 discrete inputs, address 0 | **PASS** |
+| FC03 | Read 5 holding registers, address 0; expected [100, 200, 300, 400, 500] | **PASS** |
+| FC03 | Read 5 holding registers, address 120; expected [12100, 12200, 12300, 12400, 12500] | **PASS** |
+| FC04 | Read 5 input registers, address 0; expected [1000, 1001, 1002, 1003, 1004] | **PASS** |
+| FC04 | Read 5 input registers, address 120; expected [1120, 1121, 1122, 1123, 1124] | **PASS** |
+| FC05 | Write single coil and read back ON state | **PASS** |
+| FC06 | Write single holding register (12345) and read back | **PASS** |
+| FC15 | Write 16 coils and read back bit pattern | **PASS** |
+| FC16 | Write 5 holding registers [1111, 2222, 3333, 4444, 5555] and read back | **PASS** |
+
+The script reported every listed test as PASS and ended with `OVERALL RESULT: PASS`.
+
+### FACT
+
+- All eight supported Modbus function codes (FC01, FC02, FC03, FC04, FC05, FC06, FC15, FC16) passed the reported hardware tests.
+- FC03 and FC04 passed at both address 0 and address 120 for the tested five-register ranges.
+- FC05, FC06, FC15 and FC16 write responses were followed by read-back checks; returned values/states matched the expected values.
+- No firmware or external-library changes were made for this test.
+
+### SCOPE / LIMITATIONS
+
+- This checkpoint records the exact test cases and configuration shown in the user's console output.
+- It does not establish behavior for untested boundary conditions, maximum request sizes, malformed payloads other than the CRC case recorded in CHECKPOINT-60, or other baud rates.
+- The test does not independently verify electrical signal quality or interoperability with every third-party Modbus device.
+
+### DECISION
+
+- Mark the supported Modbus function-code regression as **PASS** for the tested baseline and conditions.
+- Together with CHECKPOINT-61 (extended runtime stability) and CHECKPOINT-60 (CRC rejection/recovery), the current Nano Slave baseline has passed the principal functional and stability checks recorded so far.
+- Keep the firmware and external libraries unchanged; preserve this revision as the current stable baseline.
+
+### STATUS
+
+- FC01 / FC02 / FC03 / FC04 / FC05 / FC06 / FC15 / FC16 regression: **PASS (user-reported hardware test)**.
+- Extended runtime stability (CHECKPOINT-61): **PASS**.
+- Invalid CRC rejection and valid-frame recovery (CHECKPOINT-60): **PASS**.
+- Nano Slave baseline: **FUNCTIONAL REGRESSION PASS for tested conditions**.
