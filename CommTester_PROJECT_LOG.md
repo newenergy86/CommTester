@@ -2050,3 +2050,33 @@ Compile and upload CHECKPOINT-53, then perform the acceptance tests above. Do no
 - OLED Slave title source: **IMPLEMENTED**.
 - GitHub write/read-back verification: **PASS**.
 - Compilation, memory measurement and hardware acceptance: **PENDING**.
+
+
+## CHECKPOINT-54 — Startup hang localization instrumentation
+
+### CHANGE
+
+- Added temporary serial markers inside `ModbusSlave::begin()` around RS-232 initialization, `ModbusRTU` object construction and the RTU startup call.
+- Added temporary markers inside `ModbusRTU::begin()` at function entry, immediately before the RX-buffer quiet-time drain loop, and immediately after that loop.
+- No protocol logic, timing calculation, pin assignment, external library or runtime behavior was intentionally changed. The markers are diagnostic only.
+
+### FACT
+
+The user's boot trace ends at `BOOT 5`, after `Encoder::begin()` and immediately before/at entry to `ModbusSlave::begin()`. Current source inspection shows an unbounded quiet-time drain loop at the end of `ModbusRTU::begin()`; this is a candidate cause, not yet a confirmed cause.
+
+### TEST
+
+- GitHub source inspection before instrumentation: PASS.
+- Diagnostic source update and read-back: PENDING.
+- Arduino Nano / ATmega328P compile: PENDING.
+- Hardware boot trace with the new markers: PENDING.
+
+### NEXT STEP
+
+Flash the diagnostic revision and report the complete serial output from reset. The last marker will distinguish RS-232 initialization, object construction, RTU setup and the RX quiet-time drain loop.
+
+### STATUS
+
+- Root cause: NOT CONFIRMED.
+- Diagnostic instrumentation: ADDED; hardware verification PENDING.
+- No functional fix has been applied.
