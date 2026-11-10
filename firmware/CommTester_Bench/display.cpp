@@ -62,7 +62,11 @@ namespace {
     }
 
     line[16] = '\0';
+    Serial.print(F("OLED: row "));
+    Serial.print(row);
+    Serial.println(F(" begin"));
     u8x8.drawString(0, row, line);
+    Serial.println(F("OLED: row done"));
   }
 
   // Draw a fixed string directly from program Flash using a small stack buffer.
@@ -80,7 +84,11 @@ namespace {
     }
 
     line[16] = '\0';
+    Serial.print(F("OLED: flash row "));
+    Serial.print(row);
+    Serial.println(F(" begin"));
     u8x8.drawString(0, row, line);
+    Serial.println(F("OLED: flash row done"));
   }
 
   void appendUnsigned(char *text, uint8_t &position, uint32_t value) {
@@ -332,7 +340,9 @@ namespace {
                        uint32_t rateRequests,
                        uint32_t errors, uint32_t missed,
                        uint8_t baudIndex) {
+    Serial.println(F("OLED: clear begin"));
     u8x8.clearDisplay();
+    Serial.println(F("OLED: clear done"));
     drawRow_P(0, TEXT_HEADER);
 
     drawUiStatus();
@@ -384,7 +394,9 @@ void Display::activity() {
   lastActivityTime = millis();
 
   if (displaySleeping) {
+    Serial.println(F("OLED: wake begin"));
     u8x8.setPowerSave(0);
+    Serial.println(F("OLED: wake done"));
     displaySleeping = false;
 
     // The next update() will redraw from the newest live statistics.
@@ -475,7 +487,12 @@ uint8_t Display::handleEncoder(int8_t rotation, Encoder::ButtonEvent buttonEvent
   }
 
   if (displayReady && !displaySleeping && !displayNeedsRedraw) {
+    Serial.print(F("OLED: encoder UI begin event="));
+    Serial.print((uint8_t)buttonEvent);
+    Serial.print(F(" editing="));
+    Serial.println(editingSetting ? 1 : 0);
     drawUiStatus();
+    Serial.println(F("OLED: encoder UI done"));
   }
 
   return changed;
@@ -568,7 +585,9 @@ void Display::update(uint8_t slaveId, uint8_t masterId,
   displayedBaudIndex = visibleBaudIndex;
 
   if (millis() - lastActivityTime >= DISPLAY_SLEEP_TIMEOUT) {
+    Serial.println(F("OLED: sleep begin"));
     u8x8.setPowerSave(1);
+    Serial.println(F("OLED: sleep done"));
     displaySleeping = true;
   }
 }
