@@ -2499,3 +2499,37 @@ The user did not provide a separate power-cycle sequence or the exact stored val
 - Slave ID editor and persistence: **PASS**.
 - Baud-rate selection and Modbus communication at 1200 / 2400 / 4800 / 9600 / 19200 baud: **PASS**.
 - EEPROM settings persistence: **PASS (user-reported)**.
+
+
+## CHECKPOINT-66 — Traffic counter reset gesture PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user performed a double-click on the encoder button while outside the settings editor.
+
+Observed OLED results:
+
+- RX counter reset to zero: **PASS**.
+- TX counter reset to zero: **PASS**.
+- RATE returned to its no-sample state: **PASS**.
+- ERR counter retained its previous value: **PASS**.
+- MISS counter retained its previous value: **PASS**.
+
+### RESULT
+
+The double-click traffic-reset behavior matches the intended implementation. No firmware changes were required.
+
+### SCOPE / LIMITATIONS
+
+This checkpoint records the reported hardware observation. It does not independently verify counter behavior under a simultaneous incoming Modbus transaction or double-click timing at debounce boundaries.
+
+### DECISION
+
+- Accept the double-click traffic counter reset for the tested conditions.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- RX/TX reset: **PASS**.
+- RATE denominator reset / no-sample display: **PASS**.
+- ERR/MISS retained: **PASS**.
