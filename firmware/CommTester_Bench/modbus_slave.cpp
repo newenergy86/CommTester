@@ -237,7 +237,9 @@ namespace ModbusSlave {
     // GET RS-232
     // ----------------------------------------
 
+    Serial.println(F("MS: RS232 begin"));
     RS232Port::begin(baud);
+    Serial.println(F("MS: RS232 ready"));
     SoftwareSerial &rs232 =
       RS232Port::getSerial();
 
@@ -246,8 +248,10 @@ namespace ModbusSlave {
     // MODBUS COMMUNICATION
     // ----------------------------------------
 
+    Serial.println(F("MS: create ModbusRTU"));
     modbusComm =
       new ModbusRTU(rs232);
+    Serial.println(F("MS: ModbusRTU created"));
 
 
     // ----------------------------------------
@@ -294,10 +298,12 @@ namespace ModbusSlave {
     // START MODBUS
     // ----------------------------------------
 
+    Serial.println(F("MS: RTU begin"));
     modbusComm->begin(
       baud,
       SERIAL_8N1
     );
+    Serial.println(F("MS: RTU ready"));
   }
 
   void setSlaveId(uint8_t newSlaveId) {
