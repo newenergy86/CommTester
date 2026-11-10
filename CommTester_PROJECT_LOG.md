@@ -2090,3 +2090,41 @@ Run the post-change acceptance checks for settings/editor behavior, EEPROM persi
 - Root cause of the intermittent/non-reproduced startup issue: NOT CONFIRMED.
 - Functional regression after CHECKPOINT-53: PENDING.
 - Diagnostic markers: TEMPORARY; remove only after startup stability and regression are accepted.
+
+
+## CHECKPOINT-55 — OLED update-path diagnostic instrumentation
+
+### CHANGE
+
+- Added temporary Serial markers before and after OLED row writes through U8X8, distinguishing ordinary rows from PROGMEM rows.
+- Added markers around display clear, wake and sleep power-save calls.
+- Added markers around the UI status redraw triggered by encoder events, including the button-event value and editor state.
+- No OLED layout, encoder state machine, Modbus handling, I2C configuration, external library or functional behavior was intentionally changed.
+
+### WHY
+
+The user reports that the OLED can stop updating while Serial diagnostics indicate that the main firmware and Modbus receive path continue to run. The instrumentation is intended to identify whether execution stalls inside a specific U8X8/I2C operation or whether all OLED calls return normally.
+
+### SOURCE STATUS
+
+- Fresh current GitHub source fetched before modification: PASS.
+- OLED diagnostic instrumentation committed: PASS.
+- Immediate exact read-back of `firmware/CommTester_Bench/display.cpp`: PASS.
+- Commit: `d1d89137cf86f9e8416ce66fe91fec814194808e`.
+
+### TEST
+
+- Hardware compilation and upload: PENDING.
+- Reproduce the freeze by pressing the encoder and/or double-clicking: PENDING.
+- Capture the last OLED diagnostic marker before the screen stops: PENDING.
+- Confirm Modbus packet processing continues during the frozen-screen condition: PENDING.
+
+### NEXT STEP
+
+Compile and upload this diagnostic revision. Reproduce the display freeze once, then send the Serial Monitor output beginning at the last encoder event and ending after the freeze. Do not change the OLED or Modbus logic until the blocking operation is identified.
+
+### STATUS
+
+- Diagnostic instrumentation: IMPLEMENTED.
+- Root cause: NOT CONFIRMED.
+- Functional fix: NOT APPLIED.
