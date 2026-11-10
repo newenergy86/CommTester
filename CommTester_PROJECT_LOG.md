@@ -2159,3 +2159,43 @@ Add only targeted markers around the encoder-triggered UI redraw and OLED wake p
 - Pre-CHECKPOINT-55 OLED source baseline restored in GitHub: PASS.
 - Root cause of the original encoder-related freeze: NOT CONFIRMED.
 - Functional fix: NOT APPLIED.
+
+
+## CHECKPOINT-57 — Targeted encoder-to-OLED diagnostics
+
+### CHANGE
+- Starting from the restored pre-CHECKPOINT-55 `display.cpp`, added only four diagnostic markers:
+  - `ENC_WAKE_BEGIN` / `ENC_WAKE_DONE` around OLED wake via `u8x8.setPowerSave(0)`.
+  - `ENC_UI_BEGIN event=N` / `ENC_UI_DONE` around the encoder-triggered `drawUiStatus()` call.
+- Did not instrument startup, `clearDisplay()`, generic row drawing, Modbus processing, or the main loop.
+- No UI state logic, display layout, I2C configuration, pins or external libraries changed.
+
+### WHY
+The previous diagnostic build failed during initial screen drawing and altered the observed startup behavior. This revision preserves the known-good startup source and observes only the two OLED operations reachable from encoder handling: wake (when sleeping) and UI status redraw.
+
+### SOURCE VERIFICATION
+- Fresh current `display.cpp` fetched before modification: PASS.
+- Source baseline confirmed equal to the pre-CHECKPOINT-55 parent: PASS.
+- Diagnostic update committed: cd4566aa1189e5d35b0a72800710232b72451f83.
+- Immediate exact read-back of `display.cpp`: PASS.
+- Resulting blob SHA: 797e64775ef1c7b87a9c35da0b4e4c0294ab5265.
+- Project log updated after source commit and fetched back: pending in this checkpoint.
+
+### TEST
+- Arduino Nano / ATmega328P compilation and upload: PENDING.
+- Normal startup, startup melody and encoder feedback: PENDING.
+- Reproduce the original freeze using the same encoder action sequence: PENDING.
+- Capture the final `ENC_*` marker before the freeze: PENDING.
+
+### INTERPRETATION GUIDE
+- `ENC_UI_BEGIN` without `ENC_UI_DONE`: execution stopped during `drawUiStatus()` / its U8X8 row write.
+- `ENC_WAKE_BEGIN` without `ENC_WAKE_DONE`: execution stopped during OLED wake / U8X8 power-save command.
+- Both BEGIN/DONE pairs complete before the freeze: the failure is elsewhere; do not infer an OLED call is responsible.
+
+### NEXT STEP
+Compile and upload this revision. Confirm normal startup first. Then reproduce the original freeze once and provide the Serial Monitor output from the last encoder event through the freeze. Do not change hardware or libraries.
+
+### STATUS
+- Targeted diagnostics committed and read-back verified: PASS.
+- Compilation and hardware reproduction: PENDING.
+- Root cause and functional fix: NOT CONFIRMED / NOT APPLIED.
