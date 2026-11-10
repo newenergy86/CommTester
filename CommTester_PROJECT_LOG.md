@@ -2533,3 +2533,38 @@ This checkpoint records the reported hardware observation. It does not independe
 - RX/TX reset: **PASS**.
 - RATE denominator reset / no-sample display: **PASS**.
 - ERR/MISS retained: **PASS**.
+
+
+## CHECKPOINT-67 — Encoder gestures outside editor PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user completed the four outside-editor encoder gesture checks:
+
+1. Clockwise and counter-clockwise rotation did not change displayed parameters: **PASS**.
+2. Short button press did not open the editor: **PASS**.
+3. Long press (>2 seconds) opened the editor and displayed the expected entry state: **PASS**.
+4. A subsequent long press exited the editor and returned to the normal Slave screen: **PASS**.
+
+The user also confirmed that the device continued to respond to Modbus requests during the test: **PASS**.
+
+### RESULT
+
+Outside-editor encoder gesture behavior and Modbus responsiveness passed the reported hardware test. No firmware changes were required.
+
+### SCOPE / LIMITATIONS
+
+This checkpoint covers the four specified gestures outside the editor and Modbus responsiveness during that test. It does not yet confirm rotation/short-press behavior inside the editor, double-click behavior inside the editor, or display/indicator regression.
+
+### DECISION
+
+- Accept outside-editor encoder gestures for the tested conditions.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- Outside-editor rotation: **PASS**.
+- Outside-editor short press: **PASS**.
+- Long-press editor entry: **PASS**.
+- Long-press editor exit: **PASS**.
+- Modbus responsiveness during gesture test: **PASS**.
