@@ -2644,7 +2644,7 @@ This checkpoint covers RX/TX indication during the tested QModMaster exchange. E
 - TX LED / sound: **PASS**.
 - Repeated Modbus traffic and continued responsiveness: **PASS**.
 - ERROR LED / sound: **PENDING**.
-- HEARTBEAT LED: **PENDING**.
+- HEARTBEAT LED: **PASS** (CHECKPOINT-71).
 
 
 ## CHECKPOINT-70 — ERROR LED and invalid-CRC recovery indication PASS
