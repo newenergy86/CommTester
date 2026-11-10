@@ -18,8 +18,8 @@ The Nano prototype is intentionally a reduced implementation. Features excluded 
 - Serial transport: project-specific `ModbusRTU` layer and external `ModbusADU` dependency.
 - Modbus: Slave only; the Nano firmware starts directly in this mode.
 - RS-232 transport: `SoftwareSerial` on D10/D11, isolated in the project-owned `rs232_port` module.
-- Encoder input: KY-040 on CLK=D8, DT=D9, SW=D7. Rotation is decoded in polling mode by the external KY040 library (codingABI, v1.0.3); the button uses a project-owned 30 ms debounce and non-blocking short/double/long press classification. Direction and button transitions are reported to USB Serial at 115200 baud. Rotation and button-press sounds are routed through the shared Indicators event queue. The user verified exactly 20 CW and 20 CCW events for 20 detents in each direction, with correct operation during active Modbus traffic (CHECKPOINT-49B), and reported successful Modbus/OLED/indicator regression (CHECKPOINT-50). The inline editor now opens/exits with a >2 s long press; inside it, rotation selects a setting, short press enters value adjustment, rotation changes the staged value, and the next short press commits it to EEPROM. Double click outside the editor resets RX/TX only; RATE returns to its no-sample state, while ERR/MISS are retained. This gesture revision is committed; compile and hardware acceptance are pending.
-- Indicators: RX/TX/ERROR LEDs, D5 HEARTBEAT LED and buzzer. D5 startup triple-flash with a three-note melody and a 2-second heartbeat are implemented in source and compile successfully for Nano; hardware verification is pending. SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
+- Encoder input: KY-040 on CLK=D8, DT=D9, SW=D7. Rotation is decoded in polling mode by the external KY040 library (codingABI, v1.0.3); the button uses a project-owned 30 ms debounce and non-blocking short/double/long press classification. Rotation and button-press sounds are routed through the shared Indicators event queue. The user verified exactly 20 CW and 20 CCW events for 20 detents in each direction, with correct operation during active Modbus traffic (CHECKPOINT-49B), and reported successful Modbus/OLED/indicator regression (CHECKPOINT-50). The inline editor now opens/exits with a >2 s long press; inside it, rotation selects a setting, short press enters value adjustment, rotation changes the staged value, and the next short press commits it to EEPROM. Double click outside the editor resets RX/TX only; RATE returns to its no-sample state, while ERR/MISS are retained. The inline editor and encoder gestures passed user-reported hardware acceptance: settings selection/edit/confirm/exit, no-op double-click inside the editor, and RX/TX counter reset outside it (CHECKPOINT-66 through CHECKPOINT-68).
+- Indicators: RX/TX/ERROR LEDs, D5 HEARTBEAT LED and buzzer. D5 startup triple-flash with a three-note melody and periodic 2-second heartbeat passed user-reported hardware verification (CHECKPOINT-71). SERVICE mode indication and old button polling have been removed; D7 is reserved for the upcoming encoder button.
 - Display: SSD1306 OLED 128×64, U8X8 text-only mode from the existing U8g2 package over hardware I²C (A4/SDA, A5/SCL). Only the Modbus Slave status screen remains; its second row is used for inline encoder selection/edit feedback without opening a separate menu. Slave ID and baud rate are editable from the main screen. The display module redraws only rows whose values changed during normal updates; full-screen clearing is reserved for initialization and wake from OLED power-save. After wake, the full redraw is deferred to the next `Display::update()` call so it uses the latest post-frame statistics rather than stale cached values. The eight-row layout and 120-second inactivity power-save/wake behavior have passed user-reported compile and hardware verification (CHECKPOINT-46).
 
 ### Current operating mode
@@ -90,8 +90,8 @@ The LCD 1602A remains a fallback only if the OLED cannot meet the Nano's memory/
 - `M1` — Modbus RTU Slave on Nano — completed and tested
 - `M2` — Modbus RTU Master — deferred to future MCU revision
 - `M3` — Bidirectional line testing — future full-featured revision
-- `M4` — Diagnostics and statistics — IN PROGRESS (traffic statistics compile PASS; updated screen build pending)
-- `M5` — Display — COMPLETED (CHECKPOINT-46); inline settings editor and encoder gesture logic implemented in source; hardware acceptance pending
+- `M4` — Diagnostics and statistics — implemented and hardware-tested for the currently defined Nano scope; see CHECKPOINT-66 through CHECKPOINT-70. This does not imply exhaustive malformed-frame or timing coverage.
+- `M5` — Display and inline settings UI — hardware acceptance passed for the eight-row display/sleep-wake behavior (CHECKPOINT-46) and encoder/editor interaction (CHECKPOINT-67/68).
 - `M6` — Portable enclosure
 - `M7` — Full-featured CommTester hardware/firmware revision
 
@@ -130,7 +130,7 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 - Complete reported Modbus function regression passed after SERVICE removal; see CHECKPOINT-39.
 - Incremental OLED row refresh implemented in source; user confirmed that the screen no longer flickers.
 - RATE percent-sign formatting, eight-row OLED layout and 120-second OLED power-save/wake behavior compiled and passed the user-reported hardware acceptance checks in CHECKPOINT-46.
-- RX/TX/ERR statistics semantics and malformed-PDU length rejection implemented in source; verification pending in CHECKPOINT-42.
+- RX/TX/ERR/MISS statistics and the tested reset/indication paths have user-reported hardware verification; see CHECKPOINT-66, CHECKPOINT-69 and CHECKPOINT-70.
 
 ### DECISIONS
 
@@ -145,21 +145,21 @@ The Nano firmware is Slave-only. The current source revision tracks RX/TX/ERR/MI
 
 ### OPEN QUESTIONS
 
-- Verify the revised inline editor: long-press entry/exit, parameter selection, short-press value editing/confirmation, double-click RX/TX reset, Slave ID (1–247), baud (1200/2400/4800/9600/19200), EEPROM persistence and dynamic RTU timing. Source is committed; compile, memory measurement, gesture tests, save/reboot and communication tests are pending.
+- Remaining editor verification: exact wrap-around boundaries and exhaustive dynamic RTU timing transitions have not been separately reported. Core editor interaction, settings persistence and supported baud-rate communication passed user-reported tests (CHECKPOINT-63 through CHECKPOINT-68).
 - Confirm the KY040 1.0.3 library is installed in the Arduino build environment.
 
 - Confirm whether the previous and current compile reports used identical toolchain and library versions before treating the memory delta as a strict apples-to-apples comparison.
 - Review `modbus_error_test.py` test 05 and decide whether a valid-CRC malformed FC03 request should be discarded or answered with exception 03.
-- Run `modbus_test_all.py` after the latest statistics and PDU-length validation changes.
-- Verify bad CRC and malformed request accounting, foreign-ID MISS accounting, and recovery after errors.
-- Confirm RX/TX/ERROR indicator behavior.
+- The complete supported-function regression passed on the tested build (CHECKPOINT-62); this is not an exhaustive protocol conformance suite.
+- Invalid-CRC rejection/recovery and ERROR indication passed for the tested sequence (CHECKPOINT-60 and CHECKPOINT-70). Exhaustive malformed-frame and foreign-ID accounting edge cases remain outside the confirmed test scope.
+- RX/TX/ERROR visual and audible indication passed the reported hardware tests (CHECKPOINT-69 and CHECKPOINT-70).
 - Encoder input test and queued sound feedback are implemented in source. The sound-feedback revision compiled at 20,532 bytes Flash (66%), 1,506 bytes global SRAM (73%), 542 bytes compiler-reported remaining. The user confirmed that the sound feedback works. Exact detent counts, button debounce acceptance, and full Modbus/OLED/indicator regression after this change remain to be verified.
-- D5 startup melody, three synchronized flashes, periodic HEARTBEAT and sound arbitration have passed user-reported hardware verification (CHECKPOINT-47D). Current PROGMEM-optimized build: 19,686 bytes Flash (64%), 1,500 bytes global SRAM (73%), 548 bytes remaining. Complete Modbus regression and repeated traffic passed without hangs (CHECKPOINT-47C). The original cause of the earlier hang remains unproven.
+- D5 startup melody, three synchronized flashes, periodic HEARTBEAT and sound arbitration passed user-reported hardware verification (CHECKPOINT-47D and CHECKPOINT-71). Current PROGMEM-optimized build: 19,686 bytes Flash (64%), 1,500 bytes global SRAM (73%), 548 bytes remaining. Complete Modbus regression and repeated traffic passed without hangs (CHECKPOINT-47C). The original cause of the earlier hang remains unproven.
 - Future MCU selection.
 
 ### NEXT STEP
 
-Compile the revised encoder/editor implementation for Arduino Nano / ATmega328P, record Flash/SRAM, then verify long/short/double press behavior, parameter selection and editing, RX/TX reset with ERR/MISS retention, EEPROM persistence, dynamic baud switching and the full Modbus/OLED/indicator regression. Preserve the existing main-screen diagnostics.
+The Nano prototype's currently defined protocol, display, encoder/editor, settings-persistence and indicator acceptance tests have passed. Preserve this firmware baseline. The next project task is to review remaining Nano scope and plan the portable enclosure (M6), without implying that electrical interface validation or exhaustive protocol conformance is complete.
 
 ### BLOCKERS
 
