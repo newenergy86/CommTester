@@ -2433,3 +2433,38 @@ This checkpoint records the four acceptance conditions reported by the user. The
 - Old-ID rejection / new-ID response: **PASS**.
 - EEPROM persistence after power cycle: **PASS**.
 - Baud-rate editor and runtime switching: **PENDING**.
+
+
+## CHECKPOINT-64 — Baud-rate switching and Modbus communication PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user confirmed that QModMaster successfully exchanged Modbus packets with CommTester at each of the five selectable baud rates:
+
+- 1200 baud: **PASS**
+- 2400 baud: **PASS**
+- 4800 baud: **PASS**
+- 9600 baud: **PASS**
+- 19200 baud: **PASS**
+
+### RESULT
+
+- Encoder-based baud-rate selection and confirmation: **PASS** (all five values selectable).
+- Runtime UART baud-rate change: **PASS** for all five tested rates.
+- Modbus request/response communication with QModMaster: **PASS** at every tested rate.
+
+### SCOPE / LIMITATIONS
+
+This checkpoint records successful communication reported by the user. The serial format, Slave ID, number of transactions per rate and persistence of the selected baud rate after a power cycle were not separately specified; they are not inferred here.
+
+### DECISION
+
+- Accept baud-rate switching and Modbus communication at all five supported rates for the reported hardware test.
+- No firmware or external-library changes were required.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- Slave ID editor and EEPROM persistence (CHECKPOINT-63): **PASS**.
+- Baud-rate selection and runtime communication at 1200 / 2400 / 4800 / 9600 / 19200 baud: **PASS**.
+- Baud-rate EEPROM persistence after power cycle: **NOT YET CONFIRMED**.
