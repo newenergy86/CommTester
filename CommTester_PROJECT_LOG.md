@@ -2397,3 +2397,39 @@ The script reported every listed test as PASS and ended with `OVERALL RESULT: PA
 - Extended runtime stability (CHECKPOINT-61): **PASS**.
 - Invalid CRC rejection and valid-frame recovery (CHECKPOINT-60): **PASS**.
 - Nano Slave baseline: **FUNCTIONAL REGRESSION PASS for tested conditions**.
+
+
+## CHECKPOINT-63 — Slave ID editor and EEPROM persistence PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user completed all four acceptance conditions for changing the Modbus Slave ID through the encoder editor:
+
+1. The newly selected Slave ID was displayed after confirmation: **PASS**.
+2. Requests addressed to the previous Slave ID received no response: **PASS**.
+3. Requests addressed to the new Slave ID received a response: **PASS**.
+4. The new Slave ID remained active after a power cycle, confirming EEPROM persistence for this test: **PASS**.
+
+### RESULT
+
+- Encoder-based Slave ID selection, confirmation and runtime application: **PASS (user-reported hardware test)**.
+- Rejection of requests addressed to the previous ID: **PASS**.
+- Response under the newly configured ID: **PASS**.
+- Persistence of the configured ID across power cycling: **PASS**.
+
+### SCOPE / LIMITATIONS
+
+This checkpoint records the four acceptance conditions reported by the user. The specific old/new ID values, Modbus master settings and number of repetitions were not provided and are intentionally not inferred. Baud-rate switching and its persistence remain separate acceptance tests.
+
+### DECISION
+
+- Accept the Slave ID editor and EEPROM persistence test for the reported conditions.
+- No firmware change was required for this test.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- Slave ID editor and runtime update: **PASS**.
+- Old-ID rejection / new-ID response: **PASS**.
+- EEPROM persistence after power cycle: **PASS**.
+- Baud-rate editor and runtime switching: **PENDING**.
