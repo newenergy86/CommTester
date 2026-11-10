@@ -2609,3 +2609,39 @@ This test deliberately restored each staged value before confirmation. It verifi
 - Editor exit: **PASS**.
 - Saved settings unchanged: **PASS**.
 - Modbus responsiveness during test: **PASS**.
+
+
+## CHECKPOINT-69 — RX/TX LED and sound indication PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user exercised Modbus request/response traffic through QModMaster and confirmed all RX/TX indication criteria:
+
+- RX LED (D2) activates on received requests: **PASS**.
+- TX LED (D3) activates on transmitted responses: **PASS**.
+- RX and TX LED indications are distinguishable and operate independently: **PASS**.
+- RX and TX audible signals are different: **PASS**.
+- Indications are brief and return to the inactive state: **PASS**.
+- Repeated requests do not cause a lockup: **PASS**.
+- Modbus communication remains operational: **PASS**.
+
+### RESULT
+
+RX/TX visual and audible indication passed the reported hardware test. No firmware changes were required.
+
+### SCOPE / LIMITATIONS
+
+This checkpoint covers RX/TX indication during the tested QModMaster exchange. ERROR indication and HEARTBEAT timing remain separate checks.
+
+### DECISION
+
+- Accept RX/TX LED and sound indication for the tested conditions.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- RX LED / sound: **PASS**.
+- TX LED / sound: **PASS**.
+- Repeated Modbus traffic and continued responsiveness: **PASS**.
+- ERROR LED / sound: **PENDING**.
+- HEARTBEAT LED: **PENDING**.
