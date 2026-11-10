@@ -384,9 +384,7 @@ void Display::activity() {
   lastActivityTime = millis();
 
   if (displaySleeping) {
-    Serial.println(F("ENC_WAKE_BEGIN"));
     u8x8.setPowerSave(0);
-    Serial.println(F("ENC_WAKE_DONE"));
     displaySleeping = false;
 
     // The next update() will redraw from the newest live statistics.
@@ -477,10 +475,7 @@ uint8_t Display::handleEncoder(int8_t rotation, Encoder::ButtonEvent buttonEvent
   }
 
   if (displayReady && !displaySleeping && !displayNeedsRedraw) {
-    Serial.print(F("ENC_UI_BEGIN event="));
-    Serial.println((uint8_t)buttonEvent);
     drawUiStatus();
-    Serial.println(F("ENC_UI_DONE"));
   }
 
   return changed;
