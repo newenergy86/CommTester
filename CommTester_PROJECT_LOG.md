@@ -2243,3 +2243,29 @@ Compile and flash the synchronized repository version. Observe startup melody, O
 - Source read-back verification: PASS.
 - Build, memory measurement and hardware A/B test: PENDING.
 - Root cause: NOT CONFIRMED.
+
+
+## CHECKPOINT-59 — Hardware result: stable operation after Serial diagnostics removal
+
+### USER-REPORTED TEST RESULT
+After flashing the CHECKPOINT-58 source with all local BOOT markers removed, the user reports:
+- Device operation is stable so far.
+- The previously observed unstable startup / repeated boot behavior and near-immediate OLED freeze have not reappeared during the reported test.
+
+### RESULT
+- Serial diagnostics removal as a stability experiment: **PASS (initial hardware observation)**.
+- Stability over extended runtime and full Modbus regression: **NOT YET VERIFIED**.
+- Exact root cause: **NOT CONFIRMED**. The result does not distinguish SRAM pressure from UART timing/load or another timing-sensitive interaction.
+
+### DECISION
+- Keep the no-debug-Serial firmware as the current baseline.
+- Do not add diagnostic Serial output back or make further code changes while the device is stable.
+- Do not claim SRAM exhaustion as the cause without a measured build report or controlled experiment.
+
+### NEXT STEP
+Continue normal use and observe startup, OLED refresh, encoder gestures, Modbus RX/TX and indicators. If the fault returns, capture the exact reproduction sequence and use a non-intrusive diagnostic method or compiler memory report before changing functional code.
+
+### STATUS
+- CHECKPOINT-58 source and read-back verification: **PASS**.
+- Initial user-reported hardware stability after CHECKPOINT-58: **PASS**.
+- Extended soak test / full regression: **PENDING**.
