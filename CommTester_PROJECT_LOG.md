@@ -2678,3 +2678,43 @@ This checkpoint covers the tested invalid-CRC sequence. It does not establish be
 - Invalid-CRC request rejected without response: **PASS**.
 - Subsequent valid request answered: **PASS**.
 - HEARTBEAT LED: **PENDING**.
+
+## CHECKPOINT-71 — HEARTBEAT hardware acceptance PASS
+
+### USER-REPORTED HARDWARE TEST
+
+The user confirmed that all five HEARTBEAT acceptance conditions passed:
+
+1. Power-on startup indication: three synchronized LED flashes with the startup melody: **PASS**.
+2. After the startup melody, D5 periodically flashes: **PASS**.
+3. HEARTBEAT interval is approximately 2 seconds: **PASS**.
+4. HEARTBEAT pulse duration is approximately 60 ms: **PASS**.
+5. HEARTBEAT continues independently during Modbus traffic: **PASS**.
+
+The user additionally confirmed that the device does not hang during the test.
+
+### RESULT
+
+HEARTBEAT startup and periodic hardware indication passed all five reported acceptance conditions. Device responsiveness was maintained. No firmware changes were required.
+
+### SCOPE / LIMITATIONS
+
+Timing values are user-observed as approximately 2 seconds and 60 ms; no instrumented timing measurement was reported. This checkpoint does not establish behavior under every possible traffic or power condition.
+
+### DECISION
+
+- Accept HEARTBEAT indication for the tested hardware conditions.
+- Preserve the current Nano firmware baseline.
+
+### STATUS
+
+- Startup triple-flash and melody: **PASS**.
+- Periodic D5 heartbeat: **PASS**.
+- Approximate 2-second interval: **PASS**.
+- Approximate 60 ms pulse: **PASS**.
+- Independence during Modbus traffic: **PASS**.
+- No device hang during test: **PASS**.
+
+### NEXT STEP
+
+Synchronize PROJECT.md with the verified Nano prototype state and review remaining milestone scope.
