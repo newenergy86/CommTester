@@ -2468,3 +2468,34 @@ This checkpoint records successful communication reported by the user. The seria
 - Slave ID editor and EEPROM persistence (CHECKPOINT-63): **PASS**.
 - Baud-rate selection and runtime communication at 1200 / 2400 / 4800 / 9600 / 19200 baud: **PASS**.
 - Baud-rate EEPROM persistence after power cycle: **NOT YET CONFIRMED**.
+
+
+## CHECKPOINT-65 — EEPROM settings persistence confirmed
+
+### USER-REPORTED HARDWARE RESULT
+
+The user confirmed that settings data are saved in EEPROM.
+
+In the context of CHECKPOINT-63 and CHECKPOINT-64, this closes the remaining persistence check for the configurable Slave ID and baud-rate settings.
+
+### RESULT
+
+- Slave ID persistence in EEPROM: **PASS** (CHECKPOINT-63; user-reported power-cycle test).
+- Baud-rate setting persistence in EEPROM: **PASS** (user confirmation).
+- Runtime Modbus communication at all five supported baud rates: **PASS** (CHECKPOINT-64).
+
+### SCOPE / LIMITATIONS
+
+The user did not provide a separate power-cycle sequence or the exact stored values for this confirmation. No additional details are inferred.
+
+### DECISION
+
+- Accept EEPROM persistence of the configurable settings for the reported hardware tests.
+- No firmware or external-library changes were required.
+- Preserve the current firmware baseline.
+
+### STATUS
+
+- Slave ID editor and persistence: **PASS**.
+- Baud-rate selection and Modbus communication at 1200 / 2400 / 4800 / 9600 / 19200 baud: **PASS**.
+- EEPROM settings persistence: **PASS (user-reported)**.
